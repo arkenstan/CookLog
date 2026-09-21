@@ -29,3 +29,9 @@ export function formatAmount(kind: ItemKind, amount: number): string {
   if (kind === 'count') return `${n} ${amount === 1 ? 'pc' : 'pcs'}`;
   return `${n} ${amount === 1 ? 'portion' : 'portions'}`;
 }
+
+/** RSVPs and item changes are allowed only while the event is pending and before its cutoff. */
+export const isRsvpOpen = (
+  meal: Pick<Meal, 'status' | 'cutoff_at'>,
+  now: number = Date.now(),
+): boolean => meal.status === 'pending' && now < Date.parse(meal.cutoff_at);

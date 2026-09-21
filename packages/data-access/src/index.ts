@@ -5,4 +5,4 @@ export { AuthStore } from './lib/auth.store';
 export { EventsStore, type CreateEventInput } from './lib/events.store';
 export { CatalogStore } from './lib/catalog.store';
 export { DocketStore } from './lib/docket.store';
-export { eventPhase, formatAmount, initialAmount, stepFor, type EventPhase } from './lib/event-utils';
+export { eventPhase, formatAmount, initialAmount, isRsvpOpen, stepFor, type EventPhase } from './lib/event-utils';

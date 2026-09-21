@@ -46,6 +46,16 @@ export const routes: Routes = [
         loadComponent: () => import('./features/resident/resident-home').then((m) => m.ResidentHome),
       },
       {
+        path: 'events/new',
+        canActivate: [roleGuard('resident')],
+        loadComponent: () => import('./features/resident/event-create').then((m) => m.EventCreate),
+      },
+      {
+        path: 'events/:id',
+        canActivate: [roleGuard('resident')],
+        loadComponent: () => import('./features/resident/event-detail').then((m) => m.EventDetail),
+      },
+      {
         path: 'households/add',
         data: { embedded: true },
         loadComponent: () => import('./features/onboarding/onboarding').then((m) => m.Onboarding),
