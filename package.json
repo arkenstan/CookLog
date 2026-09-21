@@ -2,7 +2,9 @@
   "name": "cooklog",
   "private": true,
   "packageManager": "pnpm@12.5.1",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
@@ -15,6 +17,7 @@
   },
   "devDependencies": {
     "prettier": "^3.6.0",
+    "supabase": "^2.117.0",
     "turbo": "^2.5.0"
   }
 }
