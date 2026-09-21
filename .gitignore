@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.angular/
+.turbo/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+
+# Tauri / Rust
+target/
+apps/desktop-mobile/src-tauri/gen/
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+
+# Claude Code local
+.claude/settings.local.json
