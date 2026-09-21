@@ -78,6 +78,7 @@ export type Database = {
           invite_code: string
           lunch_cutoff: string
           name: string
+          timezone: string
         }
         Insert: {
           created_at?: string
@@ -86,6 +87,7 @@ export type Database = {
           invite_code?: string
           lunch_cutoff?: string
           name: string
+          timezone?: string
         }
         Update: {
           created_at?: string
@@ -94,6 +96,7 @@ export type Database = {
           invite_code?: string
           lunch_cutoff?: string
           name?: string
+          timezone?: string
         }
         Relationships: []
       }
@@ -338,11 +341,49 @@ export type Database = {
       }
     }
     Functions: {
+      create_household: {
+        Args: { p_name: string }
+        Returns: {
+          created_at: string
+          dinner_cutoff: string
+          id: string
+          invite_code: string
+          lunch_cutoff: string
+          name: string
+          timezone: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "households"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       current_household: { Args: never; Returns: string }
       current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      ensure_todays_meals: {
+        Args: never
+        Returns: {
+          cutoff_at: string
+          date: string
+          household_id: string
+          id: string
+          menu_item_id: string | null
+          picker_id: string | null
+          status: Database["public"]["Enums"]["meal_status"]
+          type: Database["public"]["Enums"]["meal_type"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "meals"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      join_household: { Args: { p_code: string }; Returns: string }
     }
     Enums: {
       cook_event_kind: "arriving" | "ready" | "cannot_make"
