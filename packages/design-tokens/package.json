@@ -1,0 +1,14 @@
+{
+  "name": "@cooklog/design-tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./preset": "./preset.js",
+    "./theme.css": "./theme.css"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.2.0",
+    "@fontsource-variable/geist-mono": "^5.2.0"
+  }
+}
