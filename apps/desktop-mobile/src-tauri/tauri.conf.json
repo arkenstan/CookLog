@@ -1,0 +1,42 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "CookLog",
+  "version": "0.1.0",
+  "identifier": "app.cooklog.mobile",
+  "build": {
+    "frontendDist": "../../web/dist/web/browser",
+    "devUrl": "http://localhost:4200",
+    "beforeDevCommand": "pnpm --filter web start",
+    "beforeBuildCommand": "pnpm --filter web build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "CookLog",
+        "width": 1100,
+        "height": 760,
+        "resizable": true,
+        "fullscreen": false,
+        "minWidth": 360,
+        "minHeight": 560
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co http://127.0.0.1:54321 ws://127.0.0.1:54321; img-src 'self' data: https://*.supabase.co; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "android": {
+      "debugApplicationIdSuffix": ".debug"
+    }
+  }
+}
