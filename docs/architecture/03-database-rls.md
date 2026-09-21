@@ -35,7 +35,20 @@ Deviation from the HLD ("cook read-only on the view"): the cook can read `prefer
 ## Realtime & server logic
 `meals`, `rsvps`, `inventory`, `cook_events` are in the `supabase_realtime` publication. Planned Edge Functions (M6): `lock-meals` (pg_cron at cutoff), `notify` (DB webhook on `inventory → missing` and `cook_events`).
 
-## Known gaps (tracked for M2)
-- Household creation and invite-code join need an RPC (no direct insert policy on `households` or update of `profiles.household_id`).
-- Meal creation and picker rotation need a `security definer` function or cron.
-- `profiles_update_own` currently lets a user change their own `role` and `household_id`; add a column guard (trigger) before shipping.
+## Onboarding & daily meals (migration `20260921120000_onboarding_and_meals.sql`)
+Clients cannot change `role` or `household_id` directly: `update` on `profiles`, `meals` and `rsvps` is granted per column (`name, device_token` / `menu_item_id` / `status`). State changes go through `security definer` RPCs:
+
+| RPC | Who | Effect |
+| --- | --- | --- |
+| `create_household(name)` | resident without a household | Creates household, joins it, seeds default inventory and menu bank |
+| `join_household(code)` | anyone without a household | Joins by (case-insensitive) invite code |
+| `ensure_todays_meals()` | household member | Idempotently creates today's lunch + dinner (household timezone, cutoffs from `households`), assigns the rotating picker, and defaults every resident's RSVP to `in` |
+
+Sign-up passes `role` (`resident` | `cook`) in user metadata; `handle_new_user` accepts only those two values.
+
+Post-cutoff RSVP writes fail with an RLS error (the `with check` on `rsvps_update_own`); clients treat both an error and a zero-row result as "locked".
+
+## Known gaps
+- Cook one-tap actions (`cook_events`), pantry ledger UI, preferences editor: not built yet.
+- `lock-meals` cron (M6): meals are still `pending` after cutoff; RSVP locking currently relies on the policy's `now() < cutoff_at`.
+- Email confirmation is off locally; decide for production (the register page already handles the confirm-email response).
