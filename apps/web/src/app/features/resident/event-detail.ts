@@ -11,7 +11,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
   ActionResult,
@@ -29,7 +29,7 @@ import { injectNow } from '../../core/now';
 
 @Component({
   selector: 'app-event-detail',
-  imports: [DatePipe, RouterLink, ReactiveFormsModule, UiButton, UiCard, UiInput, UiSegmented, UiStepper],
+  imports: [DatePipe, RouterLink, FormsModule, ReactiveFormsModule, UiButton, UiCard, UiInput, UiSegmented, UiStepper],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a routerLink="/home" class="text-sm text-muted-foreground hover:underline">← Meal events</a>

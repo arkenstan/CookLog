@@ -56,6 +56,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/resident/event-detail').then((m) => m.EventDetail),
       },
       {
+        path: 'regulars',
+        canActivate: [roleGuard('resident')],
+        loadComponent: () => import('./features/resident/regulars').then((m) => m.Regulars),
+      },
+      {
         path: 'households/add',
         data: { embedded: true },
         loadComponent: () => import('./features/onboarding/onboarding').then((m) => m.Onboarding),

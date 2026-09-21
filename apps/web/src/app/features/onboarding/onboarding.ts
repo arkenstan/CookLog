@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ActionResult, AuthStore } from '@cooklog/data-access';
 import { UiButton, UiCard, UiField, UiInput } from '@cooklog/ui';
 
 @Component({
   selector: 'app-onboarding',
-  imports: [ReactiveFormsModule, RouterLink, UiButton, UiCard, UiField, UiInput],
+  imports: [FormsModule, ReactiveFormsModule, RouterLink, UiButton, UiCard, UiField, UiInput],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mx-auto max-w-md space-y-4">

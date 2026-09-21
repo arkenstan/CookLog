@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthStore } from '@cooklog/data-access';
 import { UiButton } from '@cooklog/ui';
 import { HouseholdSwitcher } from './household-switcher';
@@ -7,7 +7,7 @@ import { ThemeService } from '../core/theme';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, UiButton, HouseholdSwitcher],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, UiButton, HouseholdSwitcher],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
@@ -15,6 +15,12 @@ import { ThemeService } from '../core/theme';
         <div class="flex items-center gap-3">
           <p class="text-lg font-semibold tracking-tight">Cook<span class="text-primary">Log</span></p>
           <app-household-switcher />
+          @if (auth.role() === 'resident') {
+            <nav class="ml-2 hidden items-center gap-1 text-sm sm:flex" aria-label="Main">
+              <a routerLink="/home" routerLinkActive="text-foreground" [routerLinkActiveOptions]="{ exact: true }" class="rounded-lg px-3 py-2 text-muted-foreground transition-colors duration-fast hover:bg-muted">Events</a>
+              <a routerLink="/regulars" routerLinkActive="text-foreground" class="rounded-lg px-3 py-2 text-muted-foreground transition-colors duration-fast hover:bg-muted">Regulars</a>
+            </nav>
+          }
         </div>
 
         <div class="flex items-center gap-2">
