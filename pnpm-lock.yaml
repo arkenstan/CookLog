@@ -251,6 +251,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.50.0
         version: 2.116.0
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
 
   packages/design-tokens:
     dependencies:
@@ -260,6 +263,15 @@ importers:
       '@fontsource-variable/geist-mono':
         specifier: ^5.2.0
         version: 5.3.0
+
+  packages/ui:
+    dependencies:
+      '@angular/core':
+        specifier: ^22.1.0
+        version: 22.1.7(@angular/compiler@22.1.7)(rxjs@7.8.2)
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
 
 packages:
 
