@@ -46,6 +46,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/resident/resident-home').then((m) => m.ResidentHome),
       },
       {
+        path: 'households/add',
+        data: { embedded: true },
+        loadComponent: () => import('./features/onboarding/onboarding').then((m) => m.Onboarding),
+      },
+      {
         path: 'kitchen',
         canActivate: [roleGuard('cook')],
         loadComponent: () => import('./features/cook/cook-home').then((m) => m.CookHome),

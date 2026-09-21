@@ -2,21 +2,20 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { Router, RouterOutlet } from '@angular/router';
 import { AuthStore } from '@cooklog/data-access';
 import { UiButton } from '@cooklog/ui';
+import { HouseholdSwitcher } from './household-switcher';
 import { ThemeService } from '../core/theme';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, UiButton],
+  imports: [RouterOutlet, UiButton, HouseholdSwitcher],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
       <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4">
-        <p class="text-lg font-semibold tracking-tight">
-          Cook<span class="text-primary">Log</span>
-          @if (auth.household(); as hh) {
-            <span class="ml-2 text-sm font-normal text-muted-foreground">{{ hh.name }}</span>
-          }
-        </p>
+        <div class="flex items-center gap-3">
+          <p class="text-lg font-semibold tracking-tight">Cook<span class="text-primary">Log</span></p>
+          <app-household-switcher />
+        </div>
 
         <div class="flex items-center gap-2">
           @if (auth.role() === 'resident' && auth.household(); as hh) {

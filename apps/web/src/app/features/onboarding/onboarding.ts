@@ -1,15 +1,18 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ActionResult, AuthStore } from '@cooklog/data-access';
 import { UiButton, UiCard, UiField, UiInput } from '@cooklog/ui';
 
 @Component({
   selector: 'app-onboarding',
-  imports: [ReactiveFormsModule, UiButton, UiCard, UiField, UiInput],
+  imports: [ReactiveFormsModule, RouterLink, UiButton, UiCard, UiField, UiInput],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="space-y-4">
+    <div class="mx-auto max-w-md space-y-4">
+      @if (embedded()) {
+        <h2 class="text-2xl font-semibold tracking-tight">Add a household</h2>
+      }
       @if (auth.role() === 'resident') {
         <ui-card>
           <h2 class="mb-1 text-xl font-semibold">Start a household</h2>
@@ -37,12 +40,18 @@ import { UiButton, UiCard, UiField, UiInput } from '@cooklog/ui';
       @if (error()) {
         <p class="text-center text-sm text-destructive" role="alert">{{ error() }}</p>
       }
-      <button uiButton variant="ghost" class="w-full" (click)="signOut()">Sign out</button>
+      @if (embedded()) {
+        <a uiButton variant="ghost" class="w-full" routerLink="/">Cancel</a>
+      } @else {
+        <button uiButton variant="ghost" class="w-full" (click)="signOut()">Sign out</button>
+      }
     </div>
   `,
 })
 export class Onboarding {
   protected readonly auth = inject(AuthStore);
+  /** Set via route data on `/households/add`: shown inside the app shell with a Cancel link. */
+  readonly embedded = input(false);
   private readonly router = inject(Router);
 
   protected readonly name = new FormControl('', { nonNullable: true, validators: Validators.required });
