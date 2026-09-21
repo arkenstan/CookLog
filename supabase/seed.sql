@@ -7,25 +7,46 @@ insert into auth.users (id, instance_id, aud, role, email, encrypted_password, e
                         confirmation_token, recovery_token, email_change, email_change_token_new)
 select id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', email,
        crypt('password123', gen_salt('bf')), now(),
-       '{"provider":"email","providers":["email"]}', jsonb_build_object('name', name), now(), now(),
+       '{"provider":"email","providers":["email"]}',
+       jsonb_build_object('name', name, 'role', role), now(), now(),
        '', '', '', ''
 from (values
-  ('aaaaaaaa-0000-0000-0000-000000000001'::uuid, 'asha@example.com', 'Asha'),
-  ('aaaaaaaa-0000-0000-0000-000000000002'::uuid, 'ben@example.com', 'Ben'),
-  ('aaaaaaaa-0000-0000-0000-000000000003'::uuid, 'cook@example.com', 'Lakshmi')
-) as u (id, email, name);
+  ('aaaaaaaa-0000-0000-0000-000000000001'::uuid, 'asha@example.com', 'Asha', 'resident'),
+  ('aaaaaaaa-0000-0000-0000-000000000002'::uuid, 'ben@example.com', 'Ben', 'resident'),
+  ('aaaaaaaa-0000-0000-0000-000000000003'::uuid, 'cook@example.com', 'Lakshmi', 'cook')
+) as u (id, email, name, role);
 
-update public.profiles set household_id = '11111111-1111-1111-1111-111111111111';
-update public.profiles set role = 'cook' where id = 'aaaaaaaa-0000-0000-0000-000000000003';
-
-insert into public.preferences (user_id, roti_count, rice_portion) values
-  ('aaaaaaaa-0000-0000-0000-000000000001', 4, 1),
-  ('aaaaaaaa-0000-0000-0000-000000000002', 2, 0.5);
-
-insert into public.menu_items (household_id, name)
-select '11111111-1111-1111-1111-111111111111', n
-from unnest(array['Dal Tadka', 'Paneer Butter Masala', 'Aloo Gobi', 'Rajma']) n;
+insert into public.household_members (household_id, user_id)
+select '11111111-1111-1111-1111-111111111111', id from public.profiles;
+update public.profiles set active_household_id = '11111111-1111-1111-1111-111111111111';
+insert into public.preferences (user_id)
+select id from public.profiles where role = 'resident';
 
 insert into public.inventory (household_id, name)
-select '11111111-1111-1111-1111-111111111111', n
-from unnest(array['Oil', 'Atta', 'Salt', 'Milk']) n;
+select '11111111-1111-1111-1111-111111111111', n from unnest(array['Oil', 'Atta', 'Salt', 'Milk']) n;
+
+insert into public.items (id, household_id, name, kind) values
+  ('bbbbbbbb-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'Roti', 'count'),
+  ('bbbbbbbb-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'Bread', 'count'),
+  ('bbbbbbbb-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', 'Rice', 'portion'),
+  ('bbbbbbbb-0000-0000-0000-000000000004', '11111111-1111-1111-1111-111111111111', 'Dal', 'portion'),
+  ('bbbbbbbb-0000-0000-0000-000000000005', '11111111-1111-1111-1111-111111111111', 'Soup', 'portion');
+
+insert into public.regulars (user_id, item_id, amount) values
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000001', 4),
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000003', 1),
+  ('aaaaaaaa-0000-0000-0000-000000000002', 'bbbbbbbb-0000-0000-0000-000000000001', 2),
+  ('aaaaaaaa-0000-0000-0000-000000000002', 'bbbbbbbb-0000-0000-0000-000000000003', 0.5);
+
+-- A sample dinner that is still open when the DB is reset.
+with ev as (
+  insert into public.meals (household_id, created_by, title, type, starts_at, cutoff_at)
+  values ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0000-0000-0000-000000000001',
+          'Dinner', 'dinner', now() + interval '5 hours', now() + interval '2 hours')
+  returning id
+), r as (
+  insert into public.rsvps (meal_id, user_id)
+  select ev.id, p.id from ev, public.profiles p where p.role = 'resident'
+  returning meal_id, user_id
+)
+select public.apply_regulars(meal_id, user_id) from r;
