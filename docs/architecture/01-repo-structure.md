@@ -36,20 +36,31 @@ Dependencies point downward only.
 | Layer | Path | Responsibility |
 | --- | --- | --- |
 | Features | `features/{auth,onboarding,resident,cook}` | Lazy-loaded pages; use stores + UI kit only |
-| Shell | `layout/` | `AuthLayout` (centered card), `AppShell` (header, theme, invite code, sign out) |
-| Core | `core/` | Route guards, theme service, environment wiring (`environments/`) |
-| Data access | `packages/data-access` | `AuthStore`, `MealsStore`, `DocketStore` (NgRx Signal Stores), Supabase provider, realtime helper. The only code that imports `@supabase/supabase-js` |
-| UI kit | `packages/ui` | Button, card, field/input, segmented control, stat |
+| Shell | `layout/` | `AuthLayout` (centered card), `AppShell` (header, `HouseholdSwitcher`, nav, theme, invite code, sign out) |
+| Core | `core/` | Route guards, theme service, `injectNow()` (ticking clock so cutoffs lock on screen), environment wiring |
+| Data access | `packages/data-access` | `AuthStore` (session, profile, households, switching), `EventsStore` (events, availability, entries), `CatalogStore` (items, regulars), `DocketStore` (cook view); `event-utils` (phase, step, formatting). The only code that imports `@supabase/supabase-js` |
+| UI kit | `packages/ui` | Button, card, field/input, segmented control, stat, dropdown/menu item, stepper |
 
-`packages/*` are resolved through `paths` in `apps/web/tsconfig.json`; because the build/test tooling resolves their imports from the app, their runtime dependencies (`@ngrx/signals`, `@supabase/supabase-js`) are also declared in `apps/web/package.json`. Tailwind scans `packages/ui` via `content` in `apps/web/tailwind.config.js`.
+Stores are NgRx Signal Stores. Writes are optimistic with rollback: a write that errors *or* touches no row (RLS / closed event) restores the previous state. Pages reload when `AuthStore.activeHouseholdId` changes and subscribe to Realtime through `watchTables`.
+
+`packages/*` are resolved through `paths` in `apps/web/tsconfig.json`; because the build/test tooling resolves their imports from the app, their runtime dependencies (`@ngrx/signals`, `@supabase/supabase-js`) are also declared in `apps/web/package.json`. Tailwind scans `packages/ui` via `content` in `apps/web/tailwind.config.js`. Test-only helpers live in `apps/web/src/testing/` (excluded from the app build).
+
+Plain `<form (ngSubmit)>` elements need `FormsModule` (its `NgForm` provides `ngSubmit` and prevents the native submit); `ReactiveFormsModule` alone only covers `[formGroup]` forms.
 
 ## Routes
 | Path | Guards | Page |
 | --- | --- | --- |
 | `/auth/login`, `/auth/register` | `guestGuard` | Sign in; register with role (resident / cook) |
-| `/onboarding` | `authGuard`, `noHouseholdGuard` | Create a household (residents) or join by invite code |
-| `/home` | `authGuard`, `householdGuard`, `roleGuard('resident')` | Today's RSVP + menu pick |
-| `/kitchen` | `authGuard`, `householdGuard`, `roleGuard('cook')` | Live docket (KDS) |
+| `/onboarding` | `authGuard`, `noHouseholdGuard` | First household: create (residents) or join by invite code |
+| `/households/add` | `authGuard`, `householdGuard` | Same component (`embedded` via route data) to add another household |
+| `/home` | resident | Meal events dashboard: Active / Upcoming / Completed, availability toggle |
+| `/events/new` | resident | Create a meal event |
+| `/events/:id` | resident | Availability, your items (steppers), add/create items, everyone's totals |
+| `/regulars` | resident | Manage regular items |
+| `/kitchen` | cook | Live docket: today + upcoming events with per-item totals |
 | `/` | `homeRedirectGuard` | Redirects to login / onboarding / `/home` / `/kitchen` |
 
 The session and profile are restored in an app initializer (`AuthStore.init()`), so guards always see real state on first navigation.
+
+## Meal event phases
+Derived in the browser (local time) by `eventPhase()`: **active** = starts today and not cooked; **upcoming** = starts on a later day; **completed** = cooked or started on an earlier day. `isRsvpOpen()` = `status = pending` and before `cutoff_at`.

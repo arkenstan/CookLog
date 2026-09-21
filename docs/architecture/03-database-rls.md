@@ -1,54 +1,63 @@
 # 3. Database & RLS Blueprint
 
-Source of truth: [`supabase/migrations/20260921000000_init_schema.sql`](../../supabase/migrations/20260921000000_init_schema.sql). Tests: [`supabase/tests/rls.test.sql`](../../supabase/tests/rls.test.sql) (pgTAP, `pnpm db:test`).
+Source of truth: [`supabase/migrations/`](../../supabase/migrations). Tests: [`supabase/tests/`](../../supabase/tests) (pgTAP, `pnpm db:test`).
 
-## Multi-household scoping
-The PRD models one flat household; every table here is scoped by `household_id` (directly or via `meals`) so RLS can be expressed as "same household as the caller".
-
+## Model
 ```
-households 1─* profiles (id = auth.users.id, role resident|cook)
-profiles   1─1 preferences
-households 1─* menu_items, meals, inventory
-meals      1─* rsvps (meal_id, user_id), cook_events
+households 1─* household_members *─1 profiles (role resident|cook; active_household_id)
+households 1─* items (kind count|portion)
+profiles   1─* regulars *─1 items                 (my default amounts)
+households 1─* meals  (a "meal event": title, type, starts_at, cutoff_at, status)
+meals      1─* rsvps (meal_id, user_id, in|out)
+meals      1─* event_entries (meal_id, user_id, item_id, amount, source regular|manual)
+meals      1─* cook_events        households 1─* inventory
 ```
-
-## Helpers
-`current_household()` and `current_user_role()` are `security definer` with `search_path = ''`, so policies on `profiles` do not recurse. Executable by `authenticated` only.
+- **Multi-household.** A user can belong to many households (`household_members`). `profiles.active_household_id` is the one the UI shows. `current_household()` returns it (validated against membership), and nearly every policy is "row belongs to my active household". Switching = `set_active_household(id)`; no client can write the column directly. Role is account-level (`profiles.role`).
+- **Items.** `count` = whole units (roti, bread; +1 per step). `portion` = servings in 0.5 steps (soup, dal, rice). A trigger (`validate_amount`) enforces this on `regulars` and `event_entries`; amounts are `numeric(6,1)`, > 0 and ≤ 100.
+- **Regulars** are per resident and apply to items of the household they are in. They are copied into an event as `source = 'regular'` entries when the resident is In (never overwriting an existing entry, so per-event tweaks survive Out → In).
 
 ## Policy matrix (`authenticated` only; `anon` has nothing)
 | Table | Resident | Cook |
 | --- | --- | --- |
-| `households` | select own | select own |
-| `profiles` | select household; update self | select household; update self |
-| `preferences` | select household; insert/update self | select household (feeds docket) |
-| `menu_items` | select | select |
-| `meals` | select; update menu if today's `picker_id` and pending | select |
-| `rsvps` | select household; insert/update **self**, meal pending and `now() < cutoff_at` | select; **no write** |
+| `households` | select those I belong to | same |
+| `household_members` | select my rows + members of households I'm in; no writes | same |
+| `profiles` | select self + housemates; update `name`, `device_token` only | same |
+| `preferences` | select self + housemates; insert/update self | select housemates (allergies for docket) |
+| `items` | select active household; insert (as self) | select |
+| `regulars` | select/insert/update(`amount`)/delete **own** rows | — |
+| `meals` | select active household; **no direct writes** | select |
+| `rsvps` | select active household; **no direct writes** (RPC) | select |
+| `event_entries` | select active household; insert/update(`amount`)/delete **own** rows while meal is `pending` and before cutoff | select |
 | `inventory` | select, update | select, update (mark missing) |
 | `cook_events` | select | select, insert |
 
-Deviation from the HLD ("cook read-only on the view"): the cook can read `preferences` and `rsvps` rows because the docket view runs with `security_invoker = true`, so the caller's RLS applies to the underlying tables. This prevents the classic view-bypasses-RLS leak. If per-row exposure to the cook is unwanted, switch the view to `security definer` semantics behind an RPC.
+Column-level grants back this up (e.g. `update (amount)` only), so a policy mistake cannot widen writable columns.
 
-## View
-`daily_kitchen_docket`: per meal, `people_in`, `total_rotis`, `total_rice_portions`, `allergies` for residents marked `in`. RSVPs default to "in" (the client upserts `in` rows when a meal is created; a `lock-meals` function will backfill).
+## RPCs (`security definer`, `search_path = ''`, `authenticated` only)
+| RPC | Effect |
+| --- | --- |
+| `create_household(name)` | Residents only. Creates household, membership, sets active, seeds catalog (Roti, Bread = count; Rice, Dal, Soup = portion) and inventory |
+| `join_household(code)` | Adds membership by (case-insensitive) invite code and makes it active |
+| `set_active_household(id)` | Must be a member |
+| `create_meal_event(title, type, starts_at, cutoff_at)` | Residents only, `cutoff_at <= starts_at`. Creates the event; every resident member gets an `in` RSVP and their regulars |
+| `set_availability(meal, status)` | Residents only; event must be pending and before cutoff. Upserts own RSVP; `in` re-applies regulars |
+| `apply_regulars(meal, user)` | Internal (not granted to clients) |
 
-## Realtime & server logic
-`meals`, `rsvps`, `inventory`, `cook_events` are in the `supabase_realtime` publication. Planned Edge Functions (M6): `lock-meals` (pg_cron at cutoff), `notify` (DB webhook on `inventory → missing` and `cook_events`).
+Post-cutoff writes fail: RPCs raise `RSVPs are closed for this event`; direct entry writes fail with an RLS error. Clients treat an error and a zero-row result the same way ("locked") and roll back.
 
-## Onboarding & daily meals (migration `20260921120000_onboarding_and_meals.sql`)
-Clients cannot change `role` or `household_id` directly: `update` on `profiles`, `meals` and `rsvps` is granted per column (`name, device_token` / `menu_item_id` / `status`). State changes go through `security definer` RPCs:
+## Docket views (`security_invoker = true`, caller's RLS applies)
+- `daily_kitchen_docket`: per event `people_in` and merged `allergies` of residents who are In. (Name kept from the original design; it now lists events.)
+- `docket_items`: per event and item, `total` = sum of entries of residents who are **In**, plus `contributors`. Count totals are pieces, portion totals are servings.
 
-| RPC | Who | Effect |
-| --- | --- | --- |
-| `create_household(name)` | resident without a household | Creates household, joins it, seeds default inventory and menu bank |
-| `join_household(code)` | anyone without a household | Joins by (case-insensitive) invite code |
-| `ensure_todays_meals()` | household member | Idempotently creates today's lunch + dinner (household timezone, cutoffs from `households`), assigns the rotating picker, and defaults every resident's RSVP to `in` |
+## Realtime
+`meals`, `rsvps`, `inventory`, `cook_events`, `event_entries`, `items` are in the `supabase_realtime` publication. Events are filtered by RLS, so a user only receives their active household's changes.
 
-Sign-up passes `role` (`resident` | `cook`) in user metadata; `handle_new_user` accepts only those two values.
-
-Post-cutoff RSVP writes fail with an RLS error (the `with check` on `rsvps_update_own`); clients treat both an error and a zero-row result as "locked".
+## Superseded from the first design
+The daily auto-created lunch/dinner, the rotating menu picker and menu bank (`menu_items`), `ensure_todays_meals`, and `preferences.roti_count/rice_portion` were replaced by resident-created events, items and regulars.
 
 ## Known gaps
-- Cook one-tap actions (`cook_events`), pantry ledger UI, preferences editor: not built yet.
-- `lock-meals` cron (M6): meals are still `pending` after cutoff; RSVP locking currently relies on the policy's `now() < cutoff_at`.
+- Cook one-tap actions (`cook_events` UI), pantry ledger UI, allergies editor: not built yet.
+- Nothing marks events `locked` / `cooked` yet; locking relies on `cutoff_at`, and "completed" is otherwise date-based.
+- Event phases use the browser's timezone; `households.timezone` is unused for meals.
+- No way to edit/cancel an event, remove a member, or leave a household yet.
 - Email confirmation is off locally; decide for production (the register page already handles the confirm-email response).
