@@ -1,34 +1,43 @@
 import { inject } from '@angular/core';
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
-import type { DocketRow } from './models';
+import type { DocketItem, DocketRow } from './models';
 import { watchTables } from './realtime';
 import { SUPABASE } from './supabase';
 
 interface DocketState {
-  rows: DocketRow[];
+  /** Today's and upcoming events, soonest first. */
+  events: DocketRow[];
+  items: DocketItem[];
   loading: boolean;
 }
 
 export const DocketStore = signalStore(
   { providedIn: 'root' },
-  withState<DocketState>({ rows: [], loading: false }),
+  withState<DocketState>({ events: [], items: [], loading: false }),
   withMethods((store, client = inject(SUPABASE)) => {
-    async function load(): Promise<void> {
-      patchState(store, { loading: true });
-      const { data: meals } = await client.rpc('ensure_todays_meals');
-      const { data } = await client
+    async function load(opts: { silent?: boolean } = {}): Promise<void> {
+      if (!opts.silent) patchState(store, { loading: true });
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const { data: events } = await client
         .from('daily_kitchen_docket')
         .select('*')
-        .in('meal_id', (meals ?? []).map((m) => m.id));
-      const rows = (data ?? []).slice().sort((a, b) => (a.type === b.type ? 0 : a.type === 'lunch' ? -1 : 1));
-      patchState(store, { rows, loading: false });
+        .gte('starts_at', startOfToday.toISOString())
+        .order('starts_at');
+      const { data: items } = await client
+        .from('docket_items')
+        .select('*')
+        .in('meal_id', (events ?? []).map((e) => e.meal_id!));
+      patchState(store, { events: events ?? [], items: items ?? [], loading: false });
     }
 
     return {
       load,
-      /** Live refresh when RSVPs or meals change; returns the unsubscribe function. */
+      /** Live refresh when events, RSVPs or items change; returns the unsubscribe function. */
       watch(): () => void {
-        return watchTables(client, 'cook-docket', ['meals', 'rsvps'], () => void load());
+        return watchTables(client, 'cook-docket', ['meals', 'rsvps', 'event_entries'], () =>
+          void load({ silent: true }),
+        );
       },
     };
   }),

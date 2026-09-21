@@ -70,6 +70,99 @@ export type Database = {
           },
         ]
       }
+      event_entries: {
+        Row: {
+          amount: number
+          item_id: string
+          meal_id: string
+          source: Database["public"]["Enums"]["entry_source"]
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          item_id: string
+          meal_id: string
+          source?: Database["public"]["Enums"]["entry_source"]
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          item_id?: string
+          meal_id?: string
+          source?: Database["public"]["Enums"]["entry_source"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_entries_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "docket_items"
+            referencedColumns: ["item_id"]
+          },
+          {
+            foreignKeyName: "event_entries_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_entries_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "daily_kitchen_docket"
+            referencedColumns: ["meal_id"]
+          },
+          {
+            foreignKeyName: "event_entries_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "meals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      household_members: {
+        Row: {
+          household_id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          household_id: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          household_id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "household_members_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "household_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       households: {
         Row: {
           created_at: string
@@ -129,80 +222,89 @@ export type Database = {
           },
         ]
       }
-      meals: {
+      items: {
         Row: {
-          cutoff_at: string
-          date: string
+          created_at: string
+          created_by: string | null
           household_id: string
           id: string
-          menu_item_id: string | null
-          picker_id: string | null
-          status: Database["public"]["Enums"]["meal_status"]
-          type: Database["public"]["Enums"]["meal_type"]
+          kind: Database["public"]["Enums"]["item_kind"]
+          name: string
         }
         Insert: {
-          cutoff_at: string
-          date: string
+          created_at?: string
+          created_by?: string | null
           household_id: string
           id?: string
-          menu_item_id?: string | null
-          picker_id?: string | null
-          status?: Database["public"]["Enums"]["meal_status"]
-          type: Database["public"]["Enums"]["meal_type"]
+          kind: Database["public"]["Enums"]["item_kind"]
+          name: string
         }
         Update: {
-          cutoff_at?: string
-          date?: string
+          created_at?: string
+          created_by?: string | null
           household_id?: string
           id?: string
-          menu_item_id?: string | null
-          picker_id?: string | null
-          status?: Database["public"]["Enums"]["meal_status"]
-          type?: Database["public"]["Enums"]["meal_type"]
+          kind?: Database["public"]["Enums"]["item_kind"]
+          name?: string
         }
         Relationships: [
           {
-            foreignKeyName: "meals_household_id_fkey"
+            foreignKeyName: "items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_household_id_fkey"
             columns: ["household_id"]
             isOneToOne: false
             referencedRelation: "households"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      meals: {
+        Row: {
+          created_by: string | null
+          cutoff_at: string
+          household_id: string
+          id: string
+          starts_at: string
+          status: Database["public"]["Enums"]["meal_status"]
+          title: string
+          type: Database["public"]["Enums"]["meal_type"]
+        }
+        Insert: {
+          created_by?: string | null
+          cutoff_at: string
+          household_id: string
+          id?: string
+          starts_at: string
+          status?: Database["public"]["Enums"]["meal_status"]
+          title?: string
+          type: Database["public"]["Enums"]["meal_type"]
+        }
+        Update: {
+          created_by?: string | null
+          cutoff_at?: string
+          household_id?: string
+          id?: string
+          starts_at?: string
+          status?: Database["public"]["Enums"]["meal_status"]
+          title?: string
+          type?: Database["public"]["Enums"]["meal_type"]
+        }
+        Relationships: [
           {
-            foreignKeyName: "meals_menu_item_id_fkey"
-            columns: ["menu_item_id"]
-            isOneToOne: false
-            referencedRelation: "menu_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meals_picker_id_fkey"
-            columns: ["picker_id"]
+            foreignKeyName: "meals_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      menu_items: {
-        Row: {
-          household_id: string
-          id: string
-          name: string
-        }
-        Insert: {
-          household_id: string
-          id?: string
-          name: string
-        }
-        Update: {
-          household_id?: string
-          id?: string
-          name?: string
-        }
-        Relationships: [
           {
-            foreignKeyName: "menu_items_household_id_fkey"
+            foreignKeyName: "meals_household_id_fkey"
             columns: ["household_id"]
             isOneToOne: false
             referencedRelation: "households"
@@ -213,20 +315,14 @@ export type Database = {
       preferences: {
         Row: {
           allergies: string[]
-          rice_portion: number
-          roti_count: number
           user_id: string
         }
         Insert: {
           allergies?: string[]
-          rice_portion?: number
-          roti_count?: number
           user_id: string
         }
         Update: {
           allergies?: string[]
-          rice_portion?: number
-          roti_count?: number
           user_id?: string
         }
         Relationships: [
@@ -241,25 +337,25 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_household_id: string | null
           created_at: string
           device_token: string | null
-          household_id: string | null
           id: string
           name: string
           role: Database["public"]["Enums"]["user_role"]
         }
         Insert: {
+          active_household_id?: string | null
           created_at?: string
           device_token?: string | null
-          household_id?: string | null
           id: string
           name?: string
           role?: Database["public"]["Enums"]["user_role"]
         }
         Update: {
+          active_household_id?: string | null
           created_at?: string
           device_token?: string | null
-          household_id?: string | null
           id?: string
           name?: string
           role?: Database["public"]["Enums"]["user_role"]
@@ -267,9 +363,49 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_household_id_fkey"
-            columns: ["household_id"]
+            columns: ["active_household_id"]
             isOneToOne: false
             referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regulars: {
+        Row: {
+          amount: number
+          item_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          item_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulars_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "docket_items"
+            referencedColumns: ["item_id"]
+          },
+          {
+            foreignKeyName: "regulars_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulars_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -319,14 +455,13 @@ export type Database = {
       daily_kitchen_docket: {
         Row: {
           allergies: string[] | null
-          date: string | null
+          cutoff_at: string | null
           household_id: string | null
           meal_id: string | null
-          menu_item: string | null
           people_in: number | null
+          starts_at: string | null
           status: Database["public"]["Enums"]["meal_status"] | null
-          total_rice_portions: number | null
-          total_rotis: number | null
+          title: string | null
           type: Database["public"]["Enums"]["meal_type"] | null
         }
         Relationships: [
@@ -339,8 +474,46 @@ export type Database = {
           },
         ]
       }
+      docket_items: {
+        Row: {
+          contributors: number | null
+          household_id: string | null
+          item_id: string | null
+          kind: Database["public"]["Enums"]["item_kind"] | null
+          meal_id: string | null
+          name: string | null
+          total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_entries_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "daily_kitchen_docket"
+            referencedColumns: ["meal_id"]
+          },
+          {
+            foreignKeyName: "event_entries_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "meals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meals_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      apply_regulars: {
+        Args: { p_meal: string; p_user: string }
+        Returns: undefined
+      }
       create_household: {
         Args: { p_name: string }
         Returns: {
@@ -359,36 +532,56 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_meal_event: {
+        Args: {
+          p_cutoff_at: string
+          p_starts_at: string
+          p_title: string
+          p_type: Database["public"]["Enums"]["meal_type"]
+        }
+        Returns: {
+          created_by: string | null
+          cutoff_at: string
+          household_id: string
+          id: string
+          starts_at: string
+          status: Database["public"]["Enums"]["meal_status"]
+          title: string
+          type: Database["public"]["Enums"]["meal_type"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       current_household: { Args: never; Returns: string }
       current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
-      ensure_todays_meals: {
-        Args: never
-        Returns: {
-          cutoff_at: string
-          date: string
-          household_id: string
-          id: string
-          menu_item_id: string | null
-          picker_id: string | null
-          status: Database["public"]["Enums"]["meal_status"]
-          type: Database["public"]["Enums"]["meal_type"]
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "meals"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
+      is_member: { Args: { hid: string }; Returns: boolean }
       join_household: { Args: { p_code: string }; Returns: string }
+      set_active_household: {
+        Args: { p_household: string }
+        Returns: undefined
+      }
+      set_availability: {
+        Args: {
+          p_meal: string
+          p_status: Database["public"]["Enums"]["rsvp_status"]
+        }
+        Returns: undefined
+      }
+      shares_household: { Args: { uid: string }; Returns: boolean }
     }
     Enums: {
       cook_event_kind: "arriving" | "ready" | "cannot_make"
+      entry_source: "regular" | "manual"
+      item_kind: "count" | "portion"
       meal_status: "pending" | "locked" | "cooked"
-      meal_type: "lunch" | "dinner"
+      meal_type: "lunch" | "dinner" | "other"
       rsvp_status: "in" | "out"
       stock_status: "stocked" | "missing"
       user_role: "resident" | "cook"
@@ -523,8 +716,10 @@ export const Constants = {
   public: {
     Enums: {
       cook_event_kind: ["arriving", "ready", "cannot_make"],
+      entry_source: ["regular", "manual"],
+      item_kind: ["count", "portion"],
       meal_status: ["pending", "locked", "cooked"],
-      meal_type: ["lunch", "dinner"],
+      meal_type: ["lunch", "dinner", "other"],
       rsvp_status: ["in", "out"],
       stock_status: ["stocked", "missing"],
       user_role: ["resident", "cook"],
