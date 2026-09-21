@@ -202,9 +202,21 @@ importers:
       '@angular/router':
         specifier: ^22.1.0
         version: 22.1.7(@angular/common@22.1.7(@angular/core@22.1.7(@angular/compiler@22.1.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.7(@angular/compiler@22.1.7)(rxjs@7.8.2))(@angular/platform-browser@22.1.7(@angular/common@22.1.7(@angular/core@22.1.7(@angular/compiler@22.1.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.7(@angular/compiler@22.1.7)(rxjs@7.8.2)))(rxjs@7.8.2)
+      '@cooklog/data-access':
+        specifier: workspace:*
+        version: link:../../packages/data-access
       '@cooklog/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@cooklog/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@ngrx/signals':
+        specifier: ^22.0.1
+        version: 22.0.1(@angular/core@22.1.7(@angular/compiler@22.1.7)(rxjs@7.8.2))(rxjs@7.8.2)
+      '@supabase/supabase-js':
+        specifier: ^2.50.0
+        version: 2.116.0
       rxjs:
         specifier: ~7.8.0
         version: 7.8.2

@@ -1,11 +1,10 @@
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 @Component({
-  imports: [RouterOutlet],
   selector: 'app-root',
-  templateUrl: './app.html',
+  imports: [RouterOutlet],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: '<router-outlet />',
 })
-export class App {
-  protected readonly title = signal('CookLog');
-}
+export class App {}
