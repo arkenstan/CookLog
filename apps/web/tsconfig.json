@@ -12,7 +12,12 @@
     "experimentalDecorators": true,
     "importHelpers": true,
     "target": "ES2022",
-    "module": "preserve"
+    "module": "preserve",
+    "strict": true,
+    "paths": {
+      "@cooklog/data-access": ["../../packages/data-access/src/index.ts"],
+      "@cooklog/ui": ["../../packages/ui/src/index.ts"]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
