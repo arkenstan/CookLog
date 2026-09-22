@@ -35,6 +35,9 @@ export const routes: Routes = [
       },
     ],
   },
+  // Must come before the AppShell route: that one also matches '' and would otherwise
+  // render the shell with an empty outlet, leaving a blank page after sign-in.
+  { path: '', pathMatch: 'full', canActivate: [homeRedirectGuard], children: [] },
   {
     path: '',
     component: AppShell,
@@ -77,6 +80,5 @@ export const routes: Routes = [
       },
     ],
   },
-  { path: '', pathMatch: 'full', canActivate: [homeRedirectGuard], children: [] },
   { path: '**', redirectTo: '' },
 ];

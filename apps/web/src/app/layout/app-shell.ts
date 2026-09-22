@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthStore } from '@cooklog/data-access';
-import { UiDropdown, UiMenuItem } from '@cooklog/ui';
+import { ZardButtonComponent, ZardDropdownImports, ZardIconComponent } from '@cooklog/ui';
 import { BottomNav } from './bottom-nav';
 import { HouseholdSwitcher } from './household-switcher';
 import { ThemeService } from '../core/theme';
@@ -16,8 +16,9 @@ const NAV_LINK =
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
-    UiDropdown,
-    UiMenuItem,
+    ZardButtonComponent,
+    ZardDropdownImports,
+    ZardIconComponent,
     BottomNav,
     HouseholdSwitcher,
   ],
@@ -30,9 +31,11 @@ const NAV_LINK =
     >
 
     <header class="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
-      <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4">
-        <div class="flex items-center gap-3">
-          <h1 class="text-lg font-semibold tracking-tight">Cook<span class="text-primary">Log</span></h1>
+      <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4 sm:gap-3">
+        <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+          <h1 class="shrink-0 text-lg font-semibold tracking-tight">
+            Cook<span class="text-primary">Log</span>
+          </h1>
           <app-household-switcher />
           @if (auth.role() === 'resident') {
             <nav class="ml-2 hidden items-center gap-1 text-sm sm:flex" aria-label="Main">
@@ -65,22 +68,33 @@ const NAV_LINK =
           }
         </div>
 
-        <ui-dropdown align="end" label="Account and settings" [chevron]="false">
-          <span trigger aria-hidden="true" class="text-lg leading-none">⋮</span>
+        <button
+          type="button"
+          z-button
+          zType="ghost"
+          zSize="icon"
+          class="shrink-0"
+          aria-label="Account and settings"
+          z-dropdown
+          [zDropdownMenu]="accountMenu"
+        >
+          <z-icon zType="ellipsis-vertical" />
+        </button>
 
+        <z-dropdown-menu-content #accountMenu="zDropdownMenuContent" class="w-64">
           @if (auth.role() === 'resident' && auth.household(); as hh) {
-            <button uiMenuItem type="button" (click)="copyCode(hh.invite_code)">
+            <z-dropdown-menu-item (click)="copyCode(hh.invite_code)">
               <span class="flex-1 whitespace-nowrap">Copy invite code</span>
               <span class="font-mono text-xs text-muted-foreground">{{ hh.invite_code }}</span>
-            </button>
+            </z-dropdown-menu-item>
           }
-          <button uiMenuItem type="button" (click)="theme.toggle()">{{ themeLabel() }}</button>
+          <z-dropdown-menu-item (click)="theme.toggle()">{{ themeLabel() }}</z-dropdown-menu-item>
 
           <div class="my-1 border-t"></div>
-          <button uiMenuItem type="button" class="text-destructive" (click)="signOut()">
-            Sign out
-          </button>
-        </ui-dropdown>
+          <z-dropdown-menu-item variant="destructive" (click)="signOut()"
+            >Sign out</z-dropdown-menu-item
+          >
+        </z-dropdown-menu-content>
       </div>
 
       <p class="sr-only" role="status" aria-live="polite">{{ status() }}</p>

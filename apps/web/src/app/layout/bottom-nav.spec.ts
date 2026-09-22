@@ -58,10 +58,9 @@ describe('BottomNav', () => {
 
   it('hides the decorative icons from assistive tech', () => {
     const { el } = setup();
-    const icons = [...el.querySelectorAll('nav a svg')];
+    const icons = [...el.querySelectorAll('nav a z-icon')];
     expect(icons).toHaveLength(3);
-    expect(icons.every((g) => g.getAttribute('aria-hidden') === 'true')).toBe(true);
-    // currentColor, so they take the lime active colour with the label.
-    expect(icons.every((g) => g.getAttribute('stroke') === 'currentColor')).toBe(true);
+    // ZardUI's Lucide glyphs are decorative here; the link text carries the name.
+    expect(icons.every((g) => g.querySelector('svg')?.getAttribute('stroke') === 'currentColor')).toBe(true);
   });
 });

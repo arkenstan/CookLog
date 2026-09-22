@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideZard } from '@cooklog/ui';
 import { provideRouter, Router } from '@angular/router';
 import { AuthStore } from '@cooklog/data-access';
 import { HouseholdSwitcher } from './household-switcher';
@@ -12,6 +13,7 @@ describe('HouseholdSwitcher', () => {
     TestBed.configureTestingModule({
       imports: [HouseholdSwitcher],
       providers: [
+        provideZard(),
         provideRouter([]),
         {
           provide: AuthStore,
@@ -36,12 +38,14 @@ describe('HouseholdSwitcher', () => {
   it('shows the active household and lists all households after opening', async () => {
     const { fixture, el } = setup();
     expect(el.querySelector('button')?.textContent).toContain('Flat 3B');
-    expect(el.querySelector('[role="menu"]')).toBeNull();
+    expect(document.querySelector('[role="menu"]')).toBeNull();
 
     el.querySelector('button')!.click();
     fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
 
-    const items = [...el.querySelectorAll('[role="menuitem"]')].map((i) => i.textContent?.trim());
+    const items = [...document.querySelectorAll('[role="menuitem"]')].map((i) => i.textContent?.trim());
     expect(items[0]).toContain('Flat 3B');
     expect(items[1]).toContain('Parents');
     expect(items.at(-1)).toContain('Join or create household');
@@ -53,12 +57,16 @@ describe('HouseholdSwitcher', () => {
 
     el.querySelector('button')!.click();
     fixture.detectChanges();
-    (el.querySelectorAll('[role="menuitem"]')[1] as HTMLElement).click();
     await fixture.whenStable();
+    fixture.detectChanges();
+    (document.querySelectorAll('[role="menuitem"]')[1] as HTMLElement).click();
+    await fixture.whenStable();
+    // ZardUI defers the close by a macrotask, which whenStable() does not await.
+    await new Promise((resolve) => setTimeout(resolve));
     fixture.detectChanges();
 
     expect(switchHousehold).toHaveBeenCalledWith('h2');
     expect(navigate).toHaveBeenCalledWith('/');
-    expect(el.querySelector('[role="menu"]')).toBeNull();
+    expect(document.querySelector('[role="menu"]')).toBeNull();
   });
 });

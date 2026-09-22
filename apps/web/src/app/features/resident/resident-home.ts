@@ -21,12 +21,12 @@ import {
   formatAmount,
   isRsvpOpen,
 } from '@cooklog/data-access';
-import { SegmentOption, UiCard, UiSegmented } from '@cooklog/ui';
+import { ZardCardComponent, ZardToggleGroupComponent, ZardToggleGroupItem } from '@cooklog/ui';
 import { injectNow } from '../../core/now';
 
 @Component({
   selector: 'app-resident-home',
-  imports: [DatePipe, RouterLink, UiCard, UiSegmented],
+  imports: [DatePipe, RouterLink, ZardCardComponent, ZardToggleGroupComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mb-6">
@@ -34,7 +34,15 @@ import { injectNow } from '../../core/now';
       <p class="text-sm text-muted-foreground">Plan what’s cooking and tell the house if you’re in.</p>
     </div>
 
-    <ui-segmented class="mb-6" label="Event phase" [options]="tabs()" [value]="tab()" (valueChange)="tab.set($any($event))" />
+    <z-toggle-group
+      class="mb-6"
+      zMode="single"
+      zType="outline"
+      zLabel="Event phase"
+      [items]="tabs()"
+      [value]="tab()"
+      (valueChange)="tab.set($any($event))"
+    />
 
     @if (error()) {
       <p class="mb-4 rounded-lg border border-destructive/50 p-3 text-sm text-destructive" role="alert">{{ error() }}</p>
@@ -43,17 +51,17 @@ import { injectNow } from '../../core/now';
     @if (events.loading() && !events.events().length) {
       <p class="text-muted-foreground" role="status">Loading events…</p>
     } @else if (!visible().length) {
-      <ui-card>
+      <z-card>
         <p class="font-medium">Nothing {{ tab() }} right now.</p>
         <p class="mt-1 text-sm text-muted-foreground">
           @if (tab() === 'completed') { Finished events will show up here. } @else { Create a meal event to get started. }
         </p>
-      </ui-card>
+      </z-card>
     }
 
     <section class="bento">
       @for (e of visible(); track e.id) {
-        <ui-card [glow]="isOpen(e) && events.myRsvps()[e.id] === 'in'">
+        <z-card [class]="isOpen(e) && events.myRsvps()[e.id] === 'in' ? 'glow-border shadow-glow-sm' : ''">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <p class="text-xs uppercase tracking-wide text-muted-foreground">{{ e.type }}</p>
@@ -66,12 +74,14 @@ import { injectNow } from '../../core/now';
           </div>
 
           <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <ui-segmented
-              [label]="e.title + ' availability'"
-              [options]="rsvpOptions"
-              [value]="events.myRsvps()[e.id] ?? null"
+            <z-toggle-group
+              zMode="single"
+              zType="outline"
+              [zLabel]="e.title + ' availability'"
+              [items]="rsvpOptions"
+              [value]="events.myRsvps()[e.id] ?? ''"
               [disabled]="!isOpen(e)"
-              (valueChange)="rsvp(e.id, $event)"
+              (valueChange)="rsvp(e.id, $any($event))"
             />
             <p class="text-sm text-muted-foreground">
               <span class="text-lg font-semibold text-foreground">{{ events.inCounts()[e.id] ?? 0 }}</span> in
@@ -84,7 +94,7 @@ import { injectNow } from '../../core/now';
             </p>
           }
           <a [routerLink]="['/events', e.id]" class="mt-3 inline-block text-sm text-primary hover:underline">Details & items →</a>
-        </ui-card>
+        </z-card>
       }
     </section>
 
@@ -106,12 +116,12 @@ export class ResidentHome implements OnInit {
   protected readonly now = injectNow();
   protected readonly tab = signal<EventPhase>('active');
   protected readonly error = signal<string | null>(null);
-  protected readonly rsvpOptions: SegmentOption[] = [
+  protected readonly rsvpOptions: ZardToggleGroupItem[] = [
     { value: 'in', label: 'In' },
     { value: 'out', label: 'Out' },
   ];
 
-  protected readonly tabs = computed<SegmentOption[]>(() => [
+  protected readonly tabs = computed<ZardToggleGroupItem[]>(() => [
     { value: 'active', label: `Active (${this.events.active().length})` },
     { value: 'upcoming', label: `Upcoming (${this.events.upcoming().length})` },
     { value: 'completed', label: `Completed (${this.events.completed().length})` },

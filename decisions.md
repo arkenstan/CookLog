@@ -191,3 +191,89 @@ cook dashboard pass and are design intent only — no code exists for them yet.
   `svg`/`currentColor` contract instead of counting glyph spans.
 - **Affects:** `apps/web/src/app/layout/bottom-nav.ts`, `packages/ui/src/lib/dropdown.ts`,
   `apps/web/src/app/layout/app-shell.ts`.
+
+### D11 — UI kit migrated to ZardUI, vendored into `packages/ui`
+
+- **Decision:** Replace the hand-rolled kit with ZardUI (zardui.com), a shadcn-for-Angular
+  library. Its components are **copied into `packages/ui/src/lib/zard/`** (shadcn model:
+  the source is ours to edit), not consumed as a runtime dependency.
+- **Status:** `accepted` — **user requirement**. Placement, theming and the Segmented
+  replacement were chosen by the user from options.
+- **Reason:** The user wanted the shadcn aesthetic with real Angular support. ZardUI is
+  signals-based, zoneless-ready and Tailwind v4 native, which matches this stack exactly.
+- **Version risk taken knowingly:** ZardUI targets **Angular 21.2**; this repo is on
+  **22.1**, and `zard-cli` is beta (`1.0.0-beta.117`). Because the code is vendored rather
+  than depended on, this is a compile question, not a locked peer range — and the source
+  uses only stable signal APIs. A spike confirmed it compiles clean on 22 (see D12).
+- **Alternatives considered:** keeping the hand-rolled kit (rejected by the user); using
+  ZardUI's default `src/app/shared/` layout with an `@/*` alias (rejected: it breaks the
+  `features → layout → core → data-access → ui` layering and splits the import surface).
+- **Consequences:** `@cooklog/ui` now re-exports ZardUI plus three of ours. Imports were
+  rewritten from `@/shared/...` to relative paths so the package stays self-contained with
+  no alias magic. New runtime deps: `@angular/cdk`, `class-variance-authority`, `clsx`,
+  `tailwind-merge`, `@ng-icons/core`, `@ng-icons/lucide`, and `tw-animate-css` (dev).
+- **Affects:** `packages/ui/**`, every page template, `app.config.ts` (`provideZard()`).
+
+### D12 — Icon layer re-pointed from `lucide-angular` to `@ng-icons/lucide`
+
+- **Decision:** Rewrite the vendored `icon.component.ts` and `icons.ts` to render through
+  `@ng-icons/core` instead of `lucide-angular`, keeping the public API (`zType`, `zSize`,
+  `class`) so the vendored Button and Toggle Group templates work untouched.
+- **Status:** `accepted` — implementation choice, forced by a hard incompatibility.
+- **Reason:** This was the **only real Angular 22 blocker** in the whole migration.
+  `lucide-angular@1.0.0` declares `@angular/core: 13.x - 21.x`. `@ng-icons/lucide@36`
+  declares `>=22.0.0`, and ZardUI's own install docs already list `@ng-icons` — upstream
+  appears to be mid-migration between the two. Same Lucide glyphs either way.
+- **Consequences:** The registry is a curated subset (9 icons) rather than upstream's ~90,
+  keyed by the same kebab-case names so `zType="loader-circle"` still resolves. Re-vendoring
+  ZardUI later means re-applying this patch. Supersedes [[D10]]'s hand-inlined SVGs, which
+  are now real Lucide icons.
+- **Affects:** `packages/ui/src/lib/zard/components/icon/`.
+
+### D13 — Local patches to vendored ZardUI
+
+Three deliberate edits to the copied source, each recorded so a future re-vendor can
+re-apply them:
+
+1. **Toggle Group takes a `zLabel`.** Upstream renders `role="group"` with no accessible
+   name, leaving screen-reader users no context for the buttons inside. Bound to `aria-label`.
+2. **Selected toggle state is `primary`, not `accent`.** Upstream uses `bg-accent`, which in
+   our palette is cyan; the selected segment has always been neon lime, and it now carries
+   `shadow-glow-sm` to match the RSVP cards. Hover no longer previews the accent colour.
+3. **Icon layer** — see D12.
+
+- **Status:** `accepted` — implementation choices.
+- **Affects:** `packages/ui/src/lib/zard/components/toggle-group/`, `.../icon/`.
+
+### D14 — `zDisabled`, not `disabled`, on ZardUI buttons
+
+- **Decision:** Every `[disabled]` binding on a `z-button` is `[zDisabled]`.
+- **Status:** `accepted` — implementation choice, found by a failing test.
+- **Reason:** `ZardButtonComponent` host-binds `[attr.disabled]` from `zDisabled()`, writing
+  `null` when false. That **strips** a native `[disabled]` property binding, so every
+  migrated submit button silently stopped disabling while `busy()`. The stepper's Increase
+  button failing its max check is what surfaced it.
+- **Consequences:** A trap for anyone adding a button later. Native `[disabled]` still
+  applies to `input`/`select`, which are not ZardUI components.
+- **Affects:** all form pages, `packages/ui/src/lib/stepper.ts`.
+
+### D15 — The `''` redirect must precede the AppShell route
+
+- **Decision:** Move `{ path: '', pathMatch: 'full', canActivate: [homeRedirectGuard], children: [] }`
+  **above** the `{ path: '', component: AppShell, children: [...] }` route.
+- **Status:** `accepted` — user-reported bug fix.
+- **Reason:** `homeRedirectGuard` was already correct and role-aware (`/kitchen` for a cook,
+  `/home` for a resident, `/auth/login` when signed out, `/onboarding` without a household),
+  but it was **unreachable**. The AppShell route also matches `''`; the router claimed it
+  first and rendered the shell around an empty `<router-outlet>`, so every sign-in landed on
+  a blank page with only the header and bottom nav visible.
+- **Alternatives considered:** adding an empty-path child *inside* the shell's children.
+  Rejected: it renders the shell only to immediately redirect out of it, and leaves two
+  routes competing for `''`.
+- **Consequences:** `/` never renders the shell at all now. The `**` wildcard still
+  redirects to `''`, so unknown paths resolve through the same role-aware guard.
+- **Verified:** resident → `/home`, cook → `/kitchen`, signed out → `/auth/login`, for
+  post-login, a direct `/` hit, and an unknown path — in a real browser, with no console
+  errors. `app.routes.spec.ts` covers the ordering and was confirmed to fail against the
+  old arrangement.
+- **Affects:** `apps/web/src/app/app.routes.ts`, `apps/web/src/app/app.routes.spec.ts`.

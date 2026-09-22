@@ -2,29 +2,29 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthStore } from '@cooklog/data-access';
-import { UiButton, UiCard, UiField, UiInput } from '@cooklog/ui';
+import { ZardButtonComponent, ZardCardComponent, UiField, ZardInputDirective } from '@cooklog/ui';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink, UiButton, UiCard, UiField, UiInput],
+  imports: [ReactiveFormsModule, RouterLink, ZardButtonComponent, ZardCardComponent, UiField, ZardInputDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ui-card>
+    <z-card>
       <h2 class="mb-1 text-xl font-semibold">Welcome back</h2>
       <p class="mb-5 text-sm text-muted-foreground">Sign in to your household.</p>
 
       <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4" novalidate>
         <ui-field label="Email" for="email" [error]="fieldError('email')">
-          <input uiInput id="email" type="email" autocomplete="email" formControlName="email" />
+          <input z-input id="email" type="email" autocomplete="email" formControlName="email" />
         </ui-field>
         <ui-field label="Password" for="password" [error]="fieldError('password')">
-          <input uiInput id="password" type="password" autocomplete="current-password" formControlName="password" />
+          <input z-input id="password" type="password" autocomplete="current-password" formControlName="password" />
         </ui-field>
 
         @if (error()) {
           <p class="text-sm text-destructive" role="alert">{{ error() }}</p>
         }
-        <button uiButton size="lg" class="w-full" type="submit" [disabled]="busy()">
+        <button z-button zSize="lg" class="w-full" type="submit" [zDisabled]="busy()">
           {{ busy() ? 'Signing in…' : 'Sign in' }}
         </button>
       </form>
@@ -32,7 +32,7 @@ import { UiButton, UiCard, UiField, UiInput } from '@cooklog/ui';
       <p class="mt-5 text-center text-sm text-muted-foreground">
         New here? <a routerLink="/auth/register" class="text-primary hover:underline">Create an account</a>
       </p>
-    </ui-card>
+    </z-card>
   `,
 })
 export class Login {

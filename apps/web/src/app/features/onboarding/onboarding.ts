@@ -2,11 +2,11 @@ import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angu
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ActionResult, AuthStore } from '@cooklog/data-access';
-import { UiButton, UiCard, UiField, UiInput } from '@cooklog/ui';
+import { ZardButtonComponent, ZardCardComponent, UiField, ZardInputDirective } from '@cooklog/ui';
 
 @Component({
   selector: 'app-onboarding',
-  imports: [FormsModule, ReactiveFormsModule, RouterLink, UiButton, UiCard, UiField, UiInput],
+  imports: [FormsModule, ReactiveFormsModule, RouterLink, ZardButtonComponent, ZardCardComponent, UiField, ZardInputDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mx-auto max-w-md space-y-4">
@@ -14,36 +14,36 @@ import { UiButton, UiCard, UiField, UiInput } from '@cooklog/ui';
         <h2 class="text-2xl font-semibold tracking-tight">Add a household</h2>
       }
       @if (auth.role() === 'resident') {
-        <ui-card>
+        <z-card>
           <h2 class="mb-1 text-xl font-semibold">Start a household</h2>
           <p class="mb-4 text-sm text-muted-foreground">You’ll get an invite code for housemates and the cook.</p>
           <form (ngSubmit)="create()" class="space-y-3">
             <ui-field label="Household name" for="hh-name">
-              <input uiInput id="hh-name" [formControl]="name" placeholder="Flat 3B" />
+              <input z-input id="hh-name" [formControl]="name" placeholder="Flat 3B" />
             </ui-field>
-            <button uiButton class="w-full" type="submit" [disabled]="busy()">Create household</button>
+            <button z-button class="w-full" type="submit" [zDisabled]="busy()">Create household</button>
           </form>
-        </ui-card>
+        </z-card>
       }
 
-      <ui-card>
+      <z-card>
         <h2 class="mb-1 text-xl font-semibold">Join with an invite code</h2>
         <p class="mb-4 text-sm text-muted-foreground">Ask a resident for the code shown in their app.</p>
         <form (ngSubmit)="join()" class="space-y-3">
           <ui-field label="Invite code" for="code">
-            <input uiInput id="code" [formControl]="code" autocomplete="off" />
+            <input z-input id="code" [formControl]="code" autocomplete="off" />
           </ui-field>
-          <button uiButton variant="secondary" class="w-full" type="submit" [disabled]="busy()">Join household</button>
+          <button z-button zType="secondary" class="w-full" type="submit" [zDisabled]="busy()">Join household</button>
         </form>
-      </ui-card>
+      </z-card>
 
       @if (error()) {
         <p class="text-center text-sm text-destructive" role="alert">{{ error() }}</p>
       }
       @if (embedded()) {
-        <a uiButton variant="ghost" class="w-full" routerLink="/">Cancel</a>
+        <a z-button zType="ghost" class="w-full" routerLink="/">Cancel</a>
       } @else {
-        <button uiButton variant="ghost" class="w-full" (click)="signOut()">Sign out</button>
+        <button z-button zType="ghost" class="w-full" (click)="signOut()">Sign out</button>
       }
     </div>
   `,

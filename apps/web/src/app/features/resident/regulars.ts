@@ -11,12 +11,12 @@ import {
 } from '@angular/core';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActionResult, AuthStore, CatalogStore, ItemKind, stepFor } from '@cooklog/data-access';
-import { SegmentOption, UiButton, UiCard, UiInput, UiSegmented, UiStepper } from '@cooklog/ui';
+import { ZardToggleGroupItem, ZardButtonComponent, ZardCardComponent, ZardInputDirective, ZardToggleGroupComponent, UiStepper } from '@cooklog/ui';
 
 /** Items added automatically to every event you mark "In" (roti, rice, bread…). */
 @Component({
   selector: 'app-regulars',
-  imports: [FormsModule, ReactiveFormsModule, UiButton, UiCard, UiInput, UiSegmented, UiStepper],
+  imports: [FormsModule, ReactiveFormsModule, ZardButtonComponent, ZardCardComponent, ZardInputDirective, ZardToggleGroupComponent, UiStepper],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mx-auto max-w-2xl">
@@ -30,7 +30,7 @@ import { SegmentOption, UiButton, UiCard, UiInput, UiSegmented, UiStepper } from
         <p class="mb-4 rounded-lg border border-destructive/50 p-3 text-sm text-destructive" role="alert">{{ error() }}</p>
       }
 
-      <ui-card>
+      <z-card>
         <ul class="divide-y">
           @for (row of rows(); track row.id) {
             <li class="flex flex-wrap items-center justify-between gap-3 py-3">
@@ -40,7 +40,7 @@ import { SegmentOption, UiButton, UiCard, UiInput, UiSegmented, UiStepper } from
               </div>
               <div class="flex items-center gap-2">
                 <ui-stepper [label]="row.name" [value]="row.amount" [step]="row.step" [unit]="row.unit" (changed)="set(row.id, $event)" />
-                <button uiButton variant="ghost" type="button" [attr.aria-label]="'Remove ' + row.name" (click)="remove(row.id)">✕</button>
+                <button z-button zType="ghost" type="button" [attr.aria-label]="'Remove ' + row.name" (click)="remove(row.id)">✕</button>
               </div>
             </li>
           } @empty {
@@ -50,22 +50,22 @@ import { SegmentOption, UiButton, UiCard, UiInput, UiSegmented, UiStepper } from
 
         <div class="mt-4 space-y-4 border-t pt-4">
           <div class="flex flex-wrap items-center gap-2">
-            <select uiInput class="max-w-64" aria-label="Item to make regular" #pick>
+            <select z-input class="max-w-64" aria-label="Item to make regular" #pick>
               <option value="">Add from household items…</option>
               @for (i of catalog.nonRegularItems(); track i.id) {
                 <option [value]="i.id">{{ i.name }} ({{ i.kind === 'count' ? 'count' : 'portion' }})</option>
               }
             </select>
-            <button uiButton variant="secondary" type="button" (click)="addExisting(pick.value); pick.value = ''">Add</button>
+            <button z-button zType="secondary" type="button" (click)="addExisting(pick.value); pick.value = ''">Add</button>
           </div>
 
           <form (ngSubmit)="createAndAdd()" class="flex flex-wrap items-center gap-2">
-            <input uiInput class="max-w-48" placeholder="New item, e.g. Paratha" aria-label="New item name" [formControl]="newName" />
-            <ui-segmented label="New item kind" [options]="kindOptions" [value]="newKind()" (valueChange)="newKind.set($any($event))" />
-            <button uiButton variant="secondary" type="submit" [disabled]="busy()">Create & add</button>
+            <input z-input class="max-w-48" placeholder="New item, e.g. Paratha" aria-label="New item name" [formControl]="newName" />
+            <z-toggle-group zMode="single" zType="outline" zLabel="New item kind" [items]="kindOptions" [value]="newKind()" (valueChange)="newKind.set($any($event))" />
+            <button z-button zType="secondary" type="submit" [zDisabled]="busy()">Create & add</button>
           </form>
         </div>
-      </ui-card>
+      </z-card>
     </div>
   `,
 })
@@ -78,7 +78,7 @@ export class Regulars implements OnInit {
   protected readonly busy = signal(false);
   protected readonly newName = new FormControl('', { nonNullable: true });
   protected readonly newKind = signal<ItemKind>('count');
-  protected readonly kindOptions: SegmentOption[] = [
+  protected readonly kindOptions: ZardToggleGroupItem[] = [
     { value: 'count', label: 'Count' },
     { value: 'portion', label: 'Portion' },
   ];

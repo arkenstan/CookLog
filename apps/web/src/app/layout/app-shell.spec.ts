@@ -1,5 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideZard } from '@cooklog/ui';
 import { Router, provideRouter } from '@angular/router';
 import { AuthStore } from '@cooklog/data-access';
 import { AppShell } from './app-shell';
@@ -15,6 +16,7 @@ describe('AppShell', () => {
     TestBed.configureTestingModule({
       imports: [AppShell],
       providers: [
+        provideZard(),
         provideRouter([
           { path: 'home', component: Blank },
           { path: 'grocery', component: Blank },
@@ -78,7 +80,7 @@ describe('AppShell', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const rows = [...el.querySelectorAll('[role="menuitem"]')].map((r) => r.textContent?.trim());
+    const rows = [...document.querySelectorAll('[role="menuitem"]')].map((r) => r.textContent?.trim());
     expect(rows.some((r) => r?.includes('Copy invite code') && r?.includes('abc123'))).toBe(true);
     expect(rows.some((r) => r?.includes('theme'))).toBe(true);
     expect(rows.some((r) => r === 'Sign out')).toBe(true);
@@ -91,7 +93,7 @@ describe('AppShell', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const theme = [...el.querySelectorAll('[role="menuitem"]')].find((r) =>
+    const theme = [...document.querySelectorAll('[role="menuitem"]')].find((r) =>
       r.textContent?.includes('theme'),
     )!;
     // Dark is the default, so the offer is to switch to light.
@@ -109,7 +111,7 @@ describe('AppShell', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const out = [...el.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
+    const out = [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
       (r) => r.textContent?.trim() === 'Sign out',
     )!;
     out.click();
@@ -128,7 +130,7 @@ describe('AppShell', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const copy = [...el.querySelectorAll<HTMLElement>('[role="menuitem"]')].find((r) =>
+    const copy = [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find((r) =>
       r.textContent?.includes('Copy invite code'),
     )!;
     copy.click();

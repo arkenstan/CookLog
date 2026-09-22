@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActionResult, AuthStore, GroceryItem, GroceryStore } from '@cooklog/data-access';
-import { UiButton, UiCard, UiInput } from '@cooklog/ui';
+import { ZardButtonComponent, ZardCardComponent, ZardInputDirective } from '@cooklog/ui';
 
 /**
  * The shared pantry ledger. Anyone in the household — cook included — can add an
@@ -18,7 +18,7 @@ import { UiButton, UiCard, UiInput } from '@cooklog/ui';
  */
 @Component({
   selector: 'app-grocery',
-  imports: [FormsModule, ReactiveFormsModule, UiButton, UiCard, UiInput],
+  imports: [FormsModule, ReactiveFormsModule, ZardButtonComponent, ZardCardComponent, ZardInputDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mx-auto max-w-2xl">
@@ -31,17 +31,17 @@ import { UiButton, UiCard, UiInput } from '@cooklog/ui';
         <p class="mb-4 rounded-lg border border-destructive/50 p-3 text-sm text-destructive" role="alert">{{ error() }}</p>
       }
 
-      <ui-card>
+      <z-card>
         <form (ngSubmit)="add()" class="flex flex-wrap items-center gap-2 pb-4">
           <input
-            uiInput
+            z-input
             id="grocery-name"
             class="max-w-64 flex-1"
             placeholder="Add an item, e.g. Coriander"
             aria-label="Item to add"
             [formControl]="newName"
           />
-          <button uiButton variant="secondary" type="submit" [disabled]="busy()">Add</button>
+          <button z-button zType="secondary" type="submit" [zDisabled]="busy()">Add</button>
         </form>
 
         @if (store.loading() && !store.items().length) {
@@ -72,8 +72,8 @@ import { UiButton, UiCard, UiInput } from '@cooklog/ui';
                     <span class="block text-xs text-muted-foreground">{{ addedBy(item) }}</span>
                   </label>
                   <button
-                    uiButton
-                    variant="ghost"
+                    z-button
+                    zType="ghost"
                     type="button"
                     [attr.aria-label]="'Remove ' + item.name"
                     (click)="remove(item.id)"
@@ -105,8 +105,8 @@ import { UiButton, UiCard, UiInput } from '@cooklog/ui';
                     <span class="font-medium">{{ item.name }}</span>
                   </label>
                   <button
-                    uiButton
-                    variant="ghost"
+                    z-button
+                    zType="ghost"
                     type="button"
                     [attr.aria-label]="'Remove ' + item.name"
                     (click)="remove(item.id)"
@@ -118,7 +118,7 @@ import { UiButton, UiCard, UiInput } from '@cooklog/ui';
             </ul>
           </section>
         }
-      </ui-card>
+      </z-card>
     </div>
   `,
 })

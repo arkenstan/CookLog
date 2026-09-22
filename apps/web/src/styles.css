@@ -1,3 +1,7 @@
 @import 'tailwindcss';
 @config '../tailwind.config.js';
+@import 'tw-animate-css';
+/* Positions CDK overlay panes (dropdowns, menus). Without it panes fall back to
+   static flow at the end of <body> and ignore their computed coordinates. */
+@import '@angular/cdk/overlay-prebuilt.css';
 @import '@cooklog/design-tokens/theme.css';

@@ -1,17 +1,49 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ZardButtonComponent } from './zard/components/button';
+import { ZardIconComponent } from './zard/components/icon';
 
 /**
  * − value +. Emits the next value; the parent decides what 0 means (usually "remove").
  * Use step 1 for count items and 0.5 for portions.
+ *
+ * ZardUI has no stepper, so this stays ours — but it is built out of ZardUI's Button and
+ * Icon so it inherits the same variants, focus ring and sizing as everything around it.
  */
 @Component({
   selector: 'ui-stepper',
+  imports: [ZardButtonComponent, ZardIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'inline-flex items-center gap-1 rounded-xl border bg-muted p-1', role: 'group', '[attr.aria-label]': 'label()' },
+  host: {
+    class: 'inline-flex items-center gap-1 rounded-xl border bg-muted p-1',
+    role: 'group',
+    '[attr.aria-label]': 'label()',
+  },
   template: `
-    <button type="button" [class]="btn" [disabled]="disabled()" aria-label="Decrease" (click)="changed.emit(round(value() - step()))">−</button>
+    <button
+      type="button"
+      z-button
+      zType="ghost"
+      zSize="icon-sm"
+      aria-label="Decrease"
+      [zDisabled]="disabled()"
+      (click)="changed.emit(round(value() - step()))"
+    >
+      <span aria-hidden="true" class="text-lg leading-none">−</span>
+    </button>
+
     <span class="min-w-16 px-1 text-center text-sm font-medium tabular-nums" aria-live="polite">{{ display() }}</span>
-    <button type="button" [class]="btn" [disabled]="disabled() || value() >= max()" aria-label="Increase" (click)="changed.emit(round(value() + step()))">+</button>
+
+    <button
+      type="button"
+      z-button
+      zType="ghost"
+      zSize="icon-sm"
+      aria-label="Increase"
+      [zDisabled]="disabled() || value() >= max()"
+      (click)="changed.emit(round(value() + step()))"
+    >
+      <z-icon zType="plus" class="size-4" />
+    </button>
   `,
 })
 export class UiStepper {
@@ -23,9 +55,6 @@ export class UiStepper {
   readonly disabled = input(false);
   readonly label = input('');
   readonly changed = output<number>();
-
-  protected readonly btn =
-    'press size-9 cursor-pointer rounded-lg text-lg leading-none transition-colors duration-fast hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40';
 
   protected readonly display = computed(() => {
     const v = this.value();

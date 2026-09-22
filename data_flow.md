@@ -9,6 +9,27 @@ How data moves through the code touched by each session. Newest session first.
 **Status.** The resident pass is built. Everything below describes code in the repo unless
 it is explicitly marked **planned** (the cook dashboard, which has no code yet).
 
+### The UI layer
+
+`@cooklog/ui` is ZardUI, vendored as source under `packages/ui/src/lib/zard/` (shadcn model:
+the code is ours to edit), plus three components ZardUI has no equivalent for — `UiField`,
+`UiStat` and `UiStepper` — which are themselves built on ZardUI primitives.
+
+| Concern | Where |
+| --- | --- |
+| Variants | `class-variance-authority` + `mergeClasses` (`clsx` + `tailwind-merge`) |
+| Overlays (dropdown) | `@angular/cdk/overlay` — content renders into `document.body`, **not** inside the component |
+| Event modifiers | `provideZard()` in `app.config.ts` registers the plugins behind `(click.prevent-with-stop)` |
+| Icons | `@ng-icons/lucide`, via a curated 9-icon registry (see D12) |
+| Colour | unchanged — ZardUI uses the same shadcn variable contract our tokens already define |
+
+Two consequences worth knowing when writing tests:
+
+- Dropdown content is **not** a descendant of the component under test. Specs query
+  `document`, and must `provideZard()` or the trigger's click handler never fires.
+- ZardUI closes a dropdown on a `setTimeout(…, 0)`, which `fixture.whenStable()` does not
+  await in zoneless mode; a spec asserting the close must flush a macrotask.
+
 ### The data-access boundary
 
 No Node API server exists. The backend is Supabase Postgres reached over PostgREST;
@@ -149,16 +170,15 @@ None of this existed before: the repo had no `.focus()` call, no `autofocus`, an
 | --- | --- |
 | First `Tab` on load | skip link reveals (`sr-only` → `focus:not-sr-only`) → activating it jumps to `<main id="main-content" tabindex="-1">` |
 | `NavigationEnd` | `provideRouteFocus()` (`core/focus.ts`) moves focus to `#main-content`. The first navigation is skipped, so a fresh load does not steal focus |
-| Dropdown opens | `afterNextRender` moves focus to the first `[role="menuitem"]`; rows are `tabindex="-1"` so the menu is not in the tab order |
-| Dropdown keys | `ArrowDown`/`ArrowUp` rove and wrap, `Home`/`End` jump, `Escape` closes and restores focus to the trigger, `Tab` closes and leaves focus alone so the browser moves it onward |
+| Dropdown opens | ZardUI moves focus into the panel; rows are `role="menuitem"` `tabindex="-1"`, so the menu is not in the tab order |
+| Dropdown keys | `ArrowDown`/`ArrowUp` rove, `Home`/`End` jump, `Escape` closes and restores focus to the trigger — ZardUI's own implementation, equivalent to the one it replaced |
 | Segmented keys | roving tabindex from `activeIndex()`: the checked option is `tabindex="0"`, the rest `-1`, so the group is one tab stop. `ArrowLeft/Right/Up/Down` select and wrap; `Home`/`End` jump; all ignored while `disabled()` |
 | Invite code copied | `AppShell.copyCode()` writes a sentence into `status()`, rendered in an `sr-only` `role="status" aria-live="polite"` region and cleared after 4 s. The `catch` now reads the code aloud instead of failing silently, which is what happens on a non-secure origin |
 | Field error | `UiField.errorId()` yields `<for>-error`; `event-create.ts` points the title input's `aria-describedby` at it and sets `aria-invalid` |
 | Store loading | `role="status"` on the loading paragraph in `resident-home.ts`, `event-detail.ts`, `cook-home.ts` and `grocery.ts` |
 
-`UiDropdown`'s `Escape` handler is bound on the component host. Before this change that meant
-it only fired when focus happened to already be inside the panel; moving focus in on open is
-what makes it reliable.
+ZardUI's dropdown implements the full menu keyboard contract, so migrating to it kept the
+behaviour the hand-rolled `UiDropdown` had gained, rather than regressing it.
 
 ### Planned (pass 2): cook availability
 

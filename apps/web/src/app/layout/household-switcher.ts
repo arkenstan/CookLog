@@ -1,29 +1,48 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthStore } from '@cooklog/data-access';
-import { UiDropdown, UiMenuItem } from '@cooklog/ui';
+import { ZardButtonComponent, ZardDropdownImports, ZardIconComponent } from '@cooklog/ui';
 
 /** Header dropdown: current household, the others you belong to, and join/create actions. */
 @Component({
   selector: 'app-household-switcher',
-  imports: [RouterLink, UiDropdown, UiMenuItem],
+  imports: [ZardButtonComponent, ZardDropdownImports, ZardIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // `min-w-0` so a long household name truncates instead of pushing the header menu off screen.
+  host: { class: 'flex min-w-0' },
   template: `
-    <ui-dropdown>
-      <span trigger class="max-w-40 truncate">{{ auth.household()?.name ?? 'Choose household' }}</span>
+    <button
+      type="button"
+      z-button
+      zType="outline"
+      zSize="sm"
+      class="min-w-0 max-w-full"
+      z-dropdown
+      [zDropdownMenu]="householdMenu"
+    >
+      <span class="truncate">{{ auth.household()?.name ?? 'Choose household' }}</span>
+      <z-icon zType="chevron-down" class="size-4 shrink-0 text-muted-foreground" />
+    </button>
 
+    <z-dropdown-menu-content #householdMenu="zDropdownMenuContent" class="w-56">
       @for (h of auth.households(); track h.id) {
-        <button uiMenuItem type="button" (click)="switchTo(h.id)" [attr.aria-current]="h.id === auth.activeHouseholdId()">
+        <z-dropdown-menu-item
+          (click)="switchTo(h.id)"
+          [attr.aria-current]="h.id === auth.activeHouseholdId()"
+        >
           <span class="flex-1 truncate">{{ h.name }}</span>
           @if (h.id === auth.activeHouseholdId()) {
-            <span class="text-primary" aria-label="Current">✓</span>
+            <z-icon zType="check" class="size-4 text-primary" aria-label="Current" />
           }
-        </button>
+        </z-dropdown-menu-item>
       }
 
       <div class="my-1 border-t"></div>
-      <a uiMenuItem routerLink="/households/add">＋ Join or create household</a>
-    </ui-dropdown>
+      <z-dropdown-menu-item (click)="addHousehold()">
+        <z-icon zType="plus" class="size-4" />
+        Join or create household
+      </z-dropdown-menu-item>
+    </z-dropdown-menu-content>
   `,
 })
 export class HouseholdSwitcher {
@@ -34,5 +53,9 @@ export class HouseholdSwitcher {
     const { error } = await this.auth.switchHousehold(id);
     // Pages reload their data when the active household changes; leave any household-specific page.
     if (!error) await this.router.navigateByUrl('/');
+  }
+
+  protected addHousehold(): Promise<boolean> {
+    return this.router.navigateByUrl('/households/add');
   }
 }

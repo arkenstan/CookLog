@@ -24,12 +24,12 @@ import {
   isRsvpOpen,
   stepFor,
 } from '@cooklog/data-access';
-import { SegmentOption, UiButton, UiCard, UiInput, UiSegmented, UiStepper } from '@cooklog/ui';
+import { ZardToggleGroupItem, ZardButtonComponent, ZardCardComponent, ZardInputDirective, ZardToggleGroupComponent, UiStepper } from '@cooklog/ui';
 import { injectNow } from '../../core/now';
 
 @Component({
   selector: 'app-event-detail',
-  imports: [DatePipe, RouterLink, FormsModule, ReactiveFormsModule, UiButton, UiCard, UiInput, UiSegmented, UiStepper],
+  imports: [DatePipe, RouterLink, FormsModule, ReactiveFormsModule, ZardButtonComponent, ZardCardComponent, ZardInputDirective, ZardToggleGroupComponent, UiStepper],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a routerLink="/home" class="text-sm text-muted-foreground hover:underline">← Meal events</a>
@@ -51,19 +51,19 @@ import { injectNow } from '../../core/now';
       }
 
       <section class="bento">
-        <ui-card>
+        <z-card>
           <h3 class="font-medium">Your availability</h3>
           <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <ui-segmented label="Availability" [options]="rsvpOptions" [value]="events.myRsvps()[e.id] ?? null" [disabled]="!open()" (valueChange)="rsvp($event)" />
+            <z-toggle-group zMode="single" zType="outline" zLabel="Availability" [items]="rsvpOptions" [value]="events.myRsvps()[e.id] ?? ''" [disabled]="!open()" (valueChange)="rsvp($any($event))" />
             <p class="text-sm text-muted-foreground"><span class="text-lg font-semibold text-foreground">{{ events.inCounts()[e.id] ?? 0 }}</span> in</p>
           </div>
           <dl class="mt-4 space-y-1 border-t pt-3 text-sm">
             <div class="flex gap-2"><dt class="w-8 text-muted-foreground">In</dt><dd>{{ names('in') || '—' }}</dd></div>
             <div class="flex gap-2"><dt class="w-8 text-muted-foreground">Out</dt><dd>{{ names('out') || '—' }}</dd></div>
           </dl>
-        </ui-card>
+        </z-card>
 
-        <ui-card>
+        <z-card>
           <h3 class="font-medium">Everyone’s items</h3>
           <p class="text-xs text-muted-foreground">Totals for residents who are in — what the cook prepares.</p>
           <ul class="mt-3 space-y-2">
@@ -76,9 +76,9 @@ import { injectNow } from '../../core/now';
               <li class="text-sm text-muted-foreground">No items yet.</li>
             }
           </ul>
-        </ui-card>
+        </z-card>
 
-        <ui-card class="md:col-span-2">
+        <z-card class="md:col-span-2">
           <div class="flex items-center justify-between">
             <h3 class="font-medium">Your items</h3>
             <a routerLink="/regulars" class="text-sm text-primary hover:underline">Manage regulars</a>
@@ -96,7 +96,7 @@ import { injectNow } from '../../core/now';
                 </div>
                 <div class="flex items-center gap-2">
                   <ui-stepper [label]="row.name" [value]="row.amount" [step]="row.step" [unit]="row.unit" [disabled]="!open()" (changed)="setAmount(row.id, $event)" />
-                  <button uiButton variant="ghost" type="button" [disabled]="!open()" [attr.aria-label]="'Remove ' + row.name" (click)="remove(row.id)">✕</button>
+                  <button z-button zType="ghost" type="button" [zDisabled]="!open()" [attr.aria-label]="'Remove ' + row.name" (click)="remove(row.id)">✕</button>
                 </div>
               </li>
             } @empty {
@@ -107,32 +107,32 @@ import { injectNow } from '../../core/now';
           @if (open()) {
             <div class="mt-4 space-y-4 border-t pt-4">
               <div class="flex flex-wrap items-center gap-2">
-                <select uiInput class="max-w-64" aria-label="Item to add" #pick>
+                <select z-input class="max-w-64" aria-label="Item to add" #pick>
                   <option value="">Add an item…</option>
                   @for (i of addable(); track i.id) {
                     <option [value]="i.id">{{ i.name }} ({{ i.kind === 'count' ? 'count' : 'portion' }})</option>
                   }
                 </select>
-                <button uiButton variant="secondary" type="button" (click)="addExisting(pick.value); pick.value = ''">Add</button>
+                <button z-button zType="secondary" type="button" (click)="addExisting(pick.value); pick.value = ''">Add</button>
               </div>
 
               <form (ngSubmit)="createAndAdd()" class="flex flex-wrap items-center gap-2">
-                <input uiInput class="max-w-48" placeholder="New item, e.g. Khichdi" aria-label="New item name" [formControl]="newName" />
-                <ui-segmented label="New item kind" [options]="kindOptions" [value]="newKind()" (valueChange)="newKind.set($any($event))" />
-                <button uiButton variant="secondary" type="submit" [disabled]="busy()">Create & add</button>
+                <input z-input class="max-w-48" placeholder="New item, e.g. Khichdi" aria-label="New item name" [formControl]="newName" />
+                <z-toggle-group zMode="single" zType="outline" zLabel="New item kind" [items]="kindOptions" [value]="newKind()" (valueChange)="newKind.set($any($event))" />
+                <button z-button zType="secondary" type="submit" [zDisabled]="busy()">Create & add</button>
               </form>
               <p class="text-xs text-muted-foreground">Count items go up by 1 (bread, roti). Portion items go up by ½ (soup, dal, rice).</p>
             </div>
           }
-        </ui-card>
+        </z-card>
       </section>
     } @else if (events.loading()) {
       <p class="mt-4 text-muted-foreground" role="status">Loading…</p>
     } @else {
-      <ui-card class="mt-4">
+      <z-card class="mt-4">
         <p class="font-medium">We couldn’t find that event.</p>
         <a routerLink="/home" class="mt-2 inline-block text-sm text-primary hover:underline">Back to meal events</a>
-      </ui-card>
+      </z-card>
     }
   `,
 })
@@ -150,11 +150,11 @@ export class EventDetail implements OnInit {
   protected readonly busy = signal(false);
   protected readonly newName = new FormControl('', { nonNullable: true });
   protected readonly newKind = signal<ItemKind>('count');
-  protected readonly rsvpOptions: SegmentOption[] = [
+  protected readonly rsvpOptions: ZardToggleGroupItem[] = [
     { value: 'in', label: 'In' },
     { value: 'out', label: 'Out' },
   ];
-  protected readonly kindOptions: SegmentOption[] = [
+  protected readonly kindOptions: ZardToggleGroupItem[] = [
     { value: 'count', label: 'Count' },
     { value: 'portion', label: 'Portion' },
   ];

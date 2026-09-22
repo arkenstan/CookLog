@@ -16,7 +16,7 @@ function setup(events: ReturnType<typeof fakeEvents>) {
   const fixture = TestBed.createComponent(ResidentHome);
   fixture.detectChanges();
   const el = fixture.nativeElement as HTMLElement;
-  const radios = (scope: ParentNode = el) => [...scope.querySelectorAll<HTMLButtonElement>('button[role="radio"]')];
+  const radios = (scope: ParentNode = el) => [...scope.querySelectorAll<HTMLButtonElement>('[role="group"] button')];
   const tab = (label: string) => radios().find((b) => b.textContent?.includes(label))!;
   return { fixture, el, radios, tab };
 }
@@ -59,7 +59,7 @@ describe('ResidentHome', () => {
   it('marks availability through the store', () => {
     const events = fakeEvents({ active: signal([today]), myRsvps: signal({ a1: 'in' }) });
     const { fixture, el } = setup(events);
-    const out = [...el.querySelectorAll<HTMLButtonElement>('ui-card button[role="radio"]')].find((b) => b.textContent?.trim() === 'Out')!;
+    const out = [...el.querySelectorAll<HTMLButtonElement>('z-card [role="group"] button')].find((b) => b.textContent?.trim() === 'Out')!;
 
     out.click();
     fixture.detectChanges();
@@ -70,7 +70,7 @@ describe('ResidentHome', () => {
   it('locks the toggle once RSVPs are closed', () => {
     const { el } = setup(fakeEvents({ active: signal([closed]) }));
     expect(el.textContent).toContain('RSVPs closed');
-    const radios = [...el.querySelectorAll<HTMLButtonElement>('ui-card button[role="radio"]')];
+    const radios = [...el.querySelectorAll<HTMLButtonElement>('z-card [role="group"] button')];
     expect(radios.every((b) => b.disabled)).toBe(true);
   });
 

@@ -9,12 +9,12 @@ import {
   untracked,
 } from '@angular/core';
 import { AuthStore, DocketItem, DocketStore, formatAmount } from '@cooklog/data-access';
-import { UiCard } from '@cooklog/ui';
+import { ZardCardComponent } from '@cooklog/ui';
 
 /** KDS view: today's and upcoming events with what to cook, big type, read-only, live. */
 @Component({
   selector: 'app-cook-home',
-  imports: [DatePipe, UiCard],
+  imports: [DatePipe, ZardCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mb-6 flex items-center justify-between">
@@ -27,15 +27,15 @@ import { UiCard } from '@cooklog/ui';
     @if (store.loading() && !store.events().length) {
       <p class="text-muted-foreground" role="status">Loading…</p>
     } @else if (!store.events().length) {
-      <ui-card>
+      <z-card>
         <p class="font-medium">No meal events today or coming up.</p>
         <p class="mt-1 text-sm text-muted-foreground">They’ll appear here as soon as a resident creates one.</p>
-      </ui-card>
+      </z-card>
     }
 
     <section class="bento kds:grid-cols-2">
       @for (e of store.events(); track e.meal_id) {
-        <ui-card [glow]="e.status === 'pending'">
+        <z-card [class]="e.status === 'pending' ? 'glow-border shadow-glow-sm' : ''">
           <div class="flex items-baseline justify-between gap-3">
             <p class="text-kds-md">{{ e.title }}</p>
             <p class="text-sm uppercase tracking-wide text-muted-foreground">{{ e.status }}</p>
@@ -60,7 +60,7 @@ import { UiCard } from '@cooklog/ui';
           @if (e.allergies?.length) {
             <p class="mt-5 text-sm text-warning">Allergies: {{ e.allergies.join(', ') }}</p>
           }
-        </ui-card>
+        </z-card>
       }
     </section>
   `,
