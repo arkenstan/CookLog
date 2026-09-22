@@ -33,8 +33,9 @@ const NAV_LINK =
     <header class="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
       <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4 sm:gap-3">
         <div class="flex min-w-0 items-center gap-2 sm:gap-3">
-          <h1 class="shrink-0 text-lg font-semibold tracking-tight">
-            Cook<span class="text-primary">Log</span>
+          <h1 class="flex shrink-0 items-center gap-2 text-lg font-semibold tracking-tight">
+            <img src="logo.png" alt="" width="32" height="32" class="rounded-md bg-[#09090b] p-1" />
+            <span>Cook<span class="text-primary">Log</span></span>
           </h1>
           <app-household-switcher />
           @if (auth.role() === 'resident') {

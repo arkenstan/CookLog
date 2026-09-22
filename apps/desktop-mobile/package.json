@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "tauri": "tauri",
+    "icons": "tauri icon app-icon.json",
     "dev": "tauri dev",
     "build": "tauri build"
   },

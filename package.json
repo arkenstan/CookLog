@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "turbo run dev",
+    "icons": "node scripts/generate-icons.mjs",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",
