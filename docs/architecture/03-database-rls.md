@@ -28,7 +28,7 @@ meals      1─* cook_events        households 1─* inventory
 | `meals` | select active household; **no direct writes** | select |
 | `rsvps` | select active household; **no direct writes** (RPC) | select |
 | `event_entries` | select active household; insert/update(`amount`)/delete **own** rows while meal is `pending` and before cutoff | select |
-| `inventory` | select, update | select, update (mark missing) |
+| `inventory` | select; insert (as self); update(`status`, `note`); delete — all active-household | same as resident (shared pantry: the cook marks items missing) |
 | `cook_events` | select | select, insert |
 
 Column-level grants back this up (e.g. `update (amount)` only), so a policy mistake cannot widen writable columns.
@@ -36,7 +36,7 @@ Column-level grants back this up (e.g. `update (amount)` only), so a policy mist
 ## RPCs (`security definer`, `search_path = ''`, `authenticated` only)
 | RPC | Effect |
 | --- | --- |
-| `create_household(name)` | Residents only. Creates household, membership, sets active, seeds catalog (Roti, Bread = count; Rice, Dal, Soup = portion) and inventory |
+| `create_household(name)` | Residents only. Creates household, membership, sets active, seeds catalog (Roti, Bread = count; Rice, Dal, Soup = portion) and the pantry (Oil, Atta, Salt, Milk, authored by the creator) |
 | `join_household(code)` | Adds membership by (case-insensitive) invite code and makes it active |
 | `set_active_household(id)` | Must be a member |
 | `create_meal_event(title, type, starts_at, cutoff_at)` | Residents only, `cutoff_at <= starts_at`. Creates the event; every resident member gets an `in` RSVP and their regulars |
@@ -56,7 +56,9 @@ Post-cutoff writes fail: RPCs raise `RSVPs are closed for this event`; direct en
 The daily auto-created lunch/dinner, the rotating menu picker and menu bank (`menu_items`), `ensure_todays_meals`, and `preferences.roti_count/rice_portion` were replaced by resident-created events, items and regulars.
 
 ## Known gaps
-- Cook one-tap actions (`cook_events` UI), pantry ledger UI, allergies editor: not built yet.
+- Cook one-tap actions (`cook_events` UI) and the allergies editor: not built yet.
+- The cook's screen is still read-only: cook availability per event, cook-created events and the
+  missing-ingredient grid are designed but unbuilt (see `decisions.md`, D5-D7).
 - Nothing marks events `locked` / `cooked` yet; locking relies on `cutoff_at`, and "completed" is otherwise date-based.
 - Event phases use the browser's timezone; `households.timezone` is unused for meals.
 - No way to edit/cancel an event, remove a member, or leave a household yet.

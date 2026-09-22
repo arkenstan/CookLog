@@ -22,6 +22,23 @@ function setup(events: ReturnType<typeof fakeEvents>) {
 }
 
 describe('ResidentHome', () => {
+  it('offers a labelled FAB for creating an event', () => {
+    const { el } = setup(fakeEvents({ active: signal([today]) }));
+    const fab = el.querySelector<HTMLAnchorElement>('a[aria-label="New meal event"]')!;
+
+    expect(fab).toBeTruthy();
+    expect(fab.getAttribute('href')).toBe('/events/new');
+    // The plus is decorative; the accessible name comes from aria-label.
+    expect(fab.querySelector('span')?.getAttribute('aria-hidden')).toBe('true');
+    // It floats clear of the bottom nav on phones.
+    expect(fab.className).toContain('fixed');
+  });
+
+  it('announces loading politely', () => {
+    const { el } = setup(fakeEvents({ loading: signal(true) }));
+    expect(el.querySelector('[role="status"]')?.textContent).toContain('Loading events');
+  });
+
   it('shows counts per phase and switches lists', () => {
     const { fixture, el, tab } = setup(
       fakeEvents({ active: signal([today]), upcoming: signal([later]), completed: signal([]) }),

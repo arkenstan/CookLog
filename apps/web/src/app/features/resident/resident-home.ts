@@ -21,20 +21,17 @@ import {
   formatAmount,
   isRsvpOpen,
 } from '@cooklog/data-access';
-import { SegmentOption, UiButton, UiCard, UiSegmented } from '@cooklog/ui';
+import { SegmentOption, UiCard, UiSegmented } from '@cooklog/ui';
 import { injectNow } from '../../core/now';
 
 @Component({
   selector: 'app-resident-home',
-  imports: [DatePipe, RouterLink, UiButton, UiCard, UiSegmented],
+  imports: [DatePipe, RouterLink, UiCard, UiSegmented],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h2 class="text-2xl font-semibold tracking-tight">Meal events</h2>
-        <p class="text-sm text-muted-foreground">Plan what’s cooking and tell the house if you’re in.</p>
-      </div>
-      <a uiButton routerLink="/events/new">＋ New meal event</a>
+    <div class="mb-6">
+      <h2 class="text-2xl font-semibold tracking-tight">Meal events</h2>
+      <p class="text-sm text-muted-foreground">Plan what’s cooking and tell the house if you’re in.</p>
     </div>
 
     <ui-segmented class="mb-6" label="Event phase" [options]="tabs()" [value]="tab()" (valueChange)="tab.set($any($event))" />
@@ -44,7 +41,7 @@ import { injectNow } from '../../core/now';
     }
 
     @if (events.loading() && !events.events().length) {
-      <p class="text-muted-foreground">Loading events…</p>
+      <p class="text-muted-foreground" role="status">Loading events…</p>
     } @else if (!visible().length) {
       <ui-card>
         <p class="font-medium">Nothing {{ tab() }} right now.</p>
@@ -90,6 +87,14 @@ import { injectNow } from '../../core/now';
         </ui-card>
       }
     </section>
+
+    <a
+      routerLink="/events/new"
+      aria-label="New meal event"
+      class="press fixed bottom-24 right-6 z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl font-medium text-primary-foreground shadow-glow transition-colors duration-fast ease-out-expo hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:bottom-6"
+    >
+      <span aria-hidden="true">＋</span>
+    </a>
   `,
 })
 export class ResidentHome implements OnInit {

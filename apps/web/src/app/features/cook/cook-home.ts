@@ -25,7 +25,7 @@ import { UiCard } from '@cooklog/ui';
     </div>
 
     @if (store.loading() && !store.events().length) {
-      <p class="text-muted-foreground">Loading…</p>
+      <p class="text-muted-foreground" role="status">Loading…</p>
     } @else if (!store.events().length) {
       <ui-card>
         <p class="font-medium">No meal events today or coming up.</p>

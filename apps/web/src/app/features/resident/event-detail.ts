@@ -127,7 +127,7 @@ import { injectNow } from '../../core/now';
         </ui-card>
       </section>
     } @else if (events.loading()) {
-      <p class="mt-4 text-muted-foreground">Loading…</p>
+      <p class="mt-4 text-muted-foreground" role="status">Loading…</p>
     } @else {
       <ui-card class="mt-4">
         <p class="font-medium">We couldn’t find that event.</p>

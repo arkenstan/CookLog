@@ -1,5 +1,11 @@
 import { signal } from '@angular/core';
-import { AuthStore, CatalogStore, CreateEventInput, EventsStore } from '@cooklog/data-access';
+import {
+  AuthStore,
+  CatalogStore,
+  CreateEventInput,
+  EventsStore,
+  GroceryStore,
+} from '@cooklog/data-access';
 
 export const hours = (n: number) => new Date(Date.now() + n * 3600_000).toISOString();
 
@@ -45,6 +51,29 @@ export function fakeCatalog(over: Record<string, unknown> = {}) {
       addRegular: vi.fn(async () => ({ error: null })),
       setRegular: vi.fn(async () => ({ error: null })),
       removeRegular: vi.fn(async () => ({ error: null })),
+      ...over,
+    },
+  };
+}
+
+export const GROCERIES = [
+  { id: 'g1', household_id: 'h1', name: 'Atta', status: 'missing', added_by: 'u1', note: null },
+  { id: 'g2', household_id: 'h1', name: 'Oil', status: 'stocked', added_by: 'u2', note: null },
+];
+
+export function fakeGrocery(over: Record<string, unknown> = {}) {
+  return {
+    provide: GroceryStore,
+    useValue: {
+      items: signal(GROCERIES),
+      missing: signal(GROCERIES.filter((g) => g.status === 'missing')),
+      stocked: signal(GROCERIES.filter((g) => g.status === 'stocked')),
+      names: signal({ u1: 'Asha', u2: 'Ben' }),
+      loading: signal(false),
+      load: vi.fn(async () => {}), watch: vi.fn(() => () => {}),
+      add: vi.fn(async () => ({ error: null, id: 'g3' })),
+      setStatus: vi.fn(async () => ({ error: null })),
+      remove: vi.fn(async () => ({ error: null })),
       ...over,
     },
   };

@@ -56,6 +56,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/resident/event-detail').then((m) => m.EventDetail),
       },
       {
+        // No role guard: the pantry is shared household state and the cook writes to it too.
+        path: 'grocery',
+        loadComponent: () => import('./features/resident/grocery').then((m) => m.Grocery),
+      },
+      {
         path: 'regulars',
         canActivate: [roleGuard('resident')],
         loadComponent: () => import('./features/resident/regulars').then((m) => m.Regulars),

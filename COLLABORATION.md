@@ -39,6 +39,10 @@ pnpm db:test
 pnpm gen:types
 ```
 
+The generated database types must be committed when the schema changes. CI
+checks this with `git diff --exit-code packages/data-access` after generating
+types.
+
 Do not bypass the domain RPCs for meal creation, availability, or active
 household changes. Preserve the `authenticated`-only model, active-household
 scoping, and `security definer` helper functions with an explicit empty search
@@ -67,6 +71,11 @@ pnpm db:test
 If database types or migrations changed, `pnpm gen:types` must leave the
 generated file up to date. Mention unavailable checks in the pull request.
 
+The GitHub Actions workflows also deploy the web build to Cloudflare Pages and
+Supabase migrations/functions from `main` when their relevant paths change.
+Do not add production credentials to source files; deployment uses repository
+secrets.
+
 ## Changes and pull requests
 
 Use concise commit messages such as `feat(web): add meal editing` or
@@ -77,5 +86,14 @@ changes, and include the commands that were run. Include screenshots for
 meaningful UI changes and call out any migration, generated-type, or local
 Supabase setup requirements.
 
+Keep the README and this guide aligned with current routes, scripts, and
+feature status. Link to `docs/` for detailed product and architecture material
+instead of duplicating it here.
+
 Do not commit secrets, local Supabase credentials, generated build output, or
 machine-specific Tauri artifacts.
+
+## License
+
+No license has been declared yet. Treat the repository as all-rights-reserved
+until the project adds a license file.

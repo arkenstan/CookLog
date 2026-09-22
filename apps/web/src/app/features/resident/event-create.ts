@@ -41,8 +41,15 @@ function defaultStart(type: MealType, from = new Date()): Date {
               <option value="other">Other</option>
             </select>
           </ui-field>
-          <ui-field label="Title" for="title" [error]="form.controls.title.touched && form.controls.title.invalid ? 'Give the event a title' : null">
-            <input uiInput id="title" formControlName="title" (input)="titleDirty = true" />
+          <ui-field label="Title" for="title" [error]="titleError()">
+            <input
+              uiInput
+              id="title"
+              formControlName="title"
+              [attr.aria-invalid]="titleError() ? 'true' : null"
+              [attr.aria-describedby]="titleError() ? 'title-error' : null"
+              (input)="titleDirty = true"
+            />
           </ui-field>
           <ui-field label="Starts" for="startsAt">
             <input uiInput id="startsAt" type="datetime-local" formControlName="startsAt" />
@@ -70,6 +77,13 @@ export class EventCreate {
   private readonly router = inject(Router);
 
   protected titleDirty = false;
+
+  /** A method, not a computed: reactive-forms state isn't a signal. */
+  protected titleError(): string | null {
+    const title = this.form.controls.title;
+    return title.touched && title.invalid ? 'Give the event a title' : null;
+  }
+
   protected cutoffDirty = false;
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);

@@ -7,6 +7,7 @@ import {
 import { provideRouter, withComponentInputBinding, withViewTransitions } from '@angular/router';
 import { AuthStore, provideSupabase } from '@cooklog/data-access';
 import { environment } from '../environments/environment';
+import { provideRouteFocus } from './core/focus';
 import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {
@@ -14,6 +15,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideSupabase(environment.supabase),
     provideRouter(routes, withComponentInputBinding(), withViewTransitions()),
+    provideRouteFocus(),
     // Restore the session (and profile) before the first navigation so guards see real state.
     provideAppInitializer(() => inject(AuthStore).init()),
   ],

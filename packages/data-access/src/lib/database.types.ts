@@ -195,24 +195,43 @@ export type Database = {
       }
       inventory: {
         Row: {
+          added_by: string | null
+          created_at: string
           household_id: string
           id: string
           name: string
+          note: string | null
           status: Database["public"]["Enums"]["stock_status"]
+          updated_at: string
         }
         Insert: {
+          added_by?: string | null
+          created_at?: string
           household_id: string
           id?: string
           name: string
+          note?: string | null
           status?: Database["public"]["Enums"]["stock_status"]
+          updated_at?: string
         }
         Update: {
+          added_by?: string | null
+          created_at?: string
           household_id?: string
           id?: string
           name?: string
+          note?: string | null
           status?: Database["public"]["Enums"]["stock_status"]
+          updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "inventory_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "inventory_household_id_fkey"
             columns: ["household_id"]
