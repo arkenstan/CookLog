@@ -1,8 +1,9 @@
 # Collaboration Guide
 
 CookLog is a pnpm and Turborepo monorepo for a household meal-coordination
-app. Keep changes small, testable, and consistent with the existing Angular,
-Supabase, and Tauri boundaries.
+app. Keep changes small, testable, and consistent with the existing Angular and
+Supabase boundaries. CookLog ships as a web app only; do not add desktop or
+mobile shells or native build targets.
 
 ## Before you start
 
@@ -90,8 +91,7 @@ Keep the README and this guide aligned with current routes, scripts, and
 feature status. Link to `docs/` for detailed product and architecture material
 instead of duplicating it here.
 
-Do not commit secrets, local Supabase credentials, generated build output, or
-machine-specific Tauri artifacts.
+Do not commit secrets, local Supabase credentials, or generated build output.
 
 ## License
 

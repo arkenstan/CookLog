@@ -8,10 +8,6 @@ dist/
 *.log
 .DS_Store
 
-# Tauri / Rust
-target/
-apps/desktop-mobile/src-tauri/gen/
-
 # Supabase local
 supabase/.branches/
 supabase/.temp/

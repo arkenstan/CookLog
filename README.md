@@ -4,12 +4,14 @@ CookLog coordinates meals in a shared household. Residents join meal events,
 set their availability, add regular quantities, and keep a shared grocery list.
 The household cook gets a live, aggregated kitchen docket.
 
+CookLog is a web app only. There are no desktop, Android or iOS builds; on phones
+it runs in the browser with a mobile-first responsive layout.
+
 ## Stack
 
 - Angular 22 standalone components, Signals, NgRx Signal Store, and zoneless change detection
 - Tailwind CSS v4 with shared design tokens and a small in-house UI kit
 - Supabase for Postgres, Auth, Realtime, and Row Level Security
-- Tauri 2 for the desktop shell
 - pnpm workspaces and Turborepo
 
 The web client talks to Supabase only through `packages/data-access`. Pages use
@@ -65,9 +67,7 @@ pnpm lint                               # lint all workspace projects
 pnpm turbo run lint test build          # run the CI web checks
 ```
 
-`pnpm gen:types` requires the local Supabase instance to be running. The root
-Tauri build may fail on Linux when `linuxdeploy` is unavailable; the web build
-is the focused check for the Angular application.
+`pnpm gen:types` requires the local Supabase instance to be running.
 
 ## Product surface
 
@@ -84,10 +84,7 @@ email or avatar. Supabase's own `auth` schema still stores the Google email,
 because that is how GoTrue identifies an account.
 
 Features not yet implemented include event editing/cancellation, cooked-status
-automation, allergies editing, push notifications, mobile Tauri targets, and
-production Supabase configuration. **The Tauri desktop/mobile shell currently has
-no way to sign in** — Google rejects OAuth inside embedded WebViews, so it needs a
-system-browser flow and a deep-link plugin first.
+automation, allergies editing, push notifications, and production Supabase configuration.
 
 ## CI and deployment
 
@@ -115,7 +112,6 @@ to deploy by themselves.
 | Path                     | Purpose                                                        |
 | ------------------------ | -------------------------------------------------------------- |
 | `apps/web`               | Angular SPA and application routes                             |
-| `apps/desktop-mobile`    | Tauri 2 native shell                                           |
 | `packages/data-access`   | Supabase client, generated types, stores, and realtime helpers |
 | `packages/ui`            | Shared standalone UI components                                |
 | `packages/design-tokens` | Tailwind preset and theme tokens                               |

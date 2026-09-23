@@ -74,7 +74,7 @@ To ensure rapid deployment and real-time state synchronization, the following ar
 
 &nbsp;
 
-* **Frontend:** React Native with Expo. This allows for a single codebase to deploy cross-platform for residents (iOS/Android) while offering a highly responsive, app-like web or Android APK experience for the cook's device.  
+* **Frontend:** A responsive web application, served to residents and the cook alike from a single codebase. Phones use it in the browser through a mobile-first layout; there are no desktop, Android or iOS builds.  
 * **Backend/Database:** Firebase or Supabase. The real-time listener capabilities are critical here; if a resident changes their RSVP at the last minute, the cook's dashboard must update instantly without requiring a manual page refresh.  
 * **Push Notifications:** Firebase Cloud Messaging (FCM) to handle the 1-tap pings from the cook to the residents' locked screens.
 

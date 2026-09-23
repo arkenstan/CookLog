@@ -69,5 +69,3 @@ The daily auto-created lunch/dinner, the rotating menu picker and menu bank (`me
   exposes self and housemates, so taken-ness comes back as an error from `complete_profile`.
 - Google's provider settings live in the dashboard, not in `config.toml` — `supabase db push`
   does not carry them (see the README).
-- The Tauri desktop/mobile shell has no way to sign in: Google refuses OAuth in embedded
-  WebViews, so it needs a system-browser flow and a deep-link plugin (roadmap M7).

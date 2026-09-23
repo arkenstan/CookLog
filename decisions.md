@@ -4,6 +4,27 @@ Engineering decision log. Newest session first.
 
 ---
 
+## 2026-09-24 — Web-only: remove the Tauri desktop/mobile shell
+
+**Scope.** Delete `apps/desktop-mobile` and its release workflow, and remove the Tauri
+references from the scripts and docs.
+
+### D23 — CookLog ships as a web app only
+
+- **Decision:** Remove the Tauri 2 shell (desktop, Android, iOS), `release-tauri.yml`, the
+  Tauri step in `scripts/generate-icons.mjs` and the Tauri `.gitignore` entries. Roadmap M7
+  (Native) is dropped; M8 keeps its number because earlier decisions cite it.
+- **Status:** `accepted` — **user requirement**.
+- **Reason:** The shell had no sign-in path since D16/D22, and keeping it meant a Rust
+  toolchain, signing secrets and a release matrix for a target nobody could use.
+- **Consequences:** D22 is superseded. `pnpm icons` now only writes web icons into
+  `apps/web/public`. Responsive/mobile-first web layout (e.g. D4's bottom nav) is unaffected.
+- **Affects:** `apps/desktop-mobile/` (deleted), `.github/workflows/release-tauri.yml`
+  (deleted), `scripts/generate-icons.mjs`, `.gitignore`, `pnpm-lock.yaml`, README,
+  COLLABORATION.md, `docs/architecture/`, `docs/adr/0001`.
+
+---
+
 ## 2026-09-23 — Google SSO only, username identity, minimal stored data
 
 **Scope.** Remove email/password registration in favour of Google SSO, add a first-login step
@@ -20,7 +41,7 @@ is idempotent against the live schema, and the web bundle builds. All decisions 
   with Google" button. New accounts come from Google and nowhere else.
 - **Status:** `accepted` — **user requirement**, not an implementation choice.
 - **Consequences:** `[auth.email] enable_signup = false` — see D20. The desktop/mobile shell
-  loses its only sign-in path — see D22.
+  loses its only sign-in path — see D22 (the shell was later removed — D23).
 - **Affects:** `apps/web/src/app/features/auth/`, `packages/data-access/src/lib/auth.store.ts`,
   `supabase/config.toml`.
 
@@ -116,7 +137,7 @@ is idempotent against the live schema, and the web bundle builds. All decisions 
 ### D22 — Tauri OAuth is out of scope
 
 - **Decision:** Leave `tauri.conf.json` untouched. The desktop/mobile shell has no sign-in.
-- **Status:** `accepted` — **user decision** after the regression was raised.
+- **Status:** `superseded` by D23 — the shell itself was removed.
 - **Reason:** Google rejects OAuth inside embedded WebViews (`disallowed_useragent`), and
   there is no deep-link plugin or custom scheme registered, so there is nothing for the
   callback to return into. The correct shape — system browser → deep link →
