@@ -8,7 +8,7 @@ The CookBook application follows a Client-Server architecture utilizing a Backen
 - **Backend & Database:** Supabase (PostgreSQL).  
 - **Sync & State:** Supabase Realtime for WebSocket-based live updates, combined with basic local state management.  
 - **Notifications:** Web Push API or lightweight third-party integration (e.g., WhatsApp/Twilio) as a fallback for reliable ping delivery.  
-- **Authentication:** New user registrations can be done via emails.
+- **Authentication:** Google SSO only. A first-time user picks a unique username and a role; `public.profiles` stores no name, email or avatar, so nothing in the app's own tables ties a row to a real-world person. Supabase's `auth` schema still holds the Google email as GoTrue's identity key.
 
 # **2\. Core Database Schema & Supabase Strategy**
 

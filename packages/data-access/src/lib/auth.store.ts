@@ -2,7 +2,7 @@ import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import type { Session } from '@supabase/supabase-js';
 import type { ActionResult, Household, Profile, UserRole } from './models';
-import { SUPABASE } from './supabase';
+import { SUPABASE, SUPABASE_REDIRECT_TO } from './supabase';
 
 interface AuthState {
   session: Session | null;
@@ -22,6 +22,9 @@ export const AuthStore = signalStore(
     userId: computed(() => session()?.user.id ?? null),
     isAuthenticated: computed(() => session() !== null),
     role: computed<UserRole | null>(() => profile()?.role ?? null),
+    username: computed(() => profile()?.username ?? null),
+    /** False until the user has picked a username (and with it, their role). */
+    hasProfile: computed(() => profile()?.username != null),
     activeHouseholdId: computed(() => profile()?.active_household_id ?? null),
     hasHousehold: computed(() => profile()?.active_household_id != null),
     /** The household the UI is currently showing. */
@@ -29,7 +32,7 @@ export const AuthStore = signalStore(
       () => households().find((h) => h.id === profile()?.active_household_id) ?? null,
     ),
   })),
-  withMethods((store, client = inject(SUPABASE)) => {
+  withMethods((store, client = inject(SUPABASE), redirectTo = inject(SUPABASE_REDIRECT_TO)) => {
     async function loadProfile(): Promise<void> {
       const uid = store.userId();
       if (!uid) return;
@@ -53,35 +56,49 @@ export const AuthStore = signalStore(
         client.auth.onAuthStateChange((event, session) => {
           if (event === 'SIGNED_OUT') {
             clear();
-          } else if (event === 'SIGNED_IN' && session?.user.id !== store.profile()?.id) {
+          } else if (event === 'SIGNED_IN' && session?.user.id !== store.userId()) {
             patchState(store, { session });
             // Deferred: supabase-js must not be re-entered from inside this callback.
             setTimeout(() => void loadProfile());
+          } else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+            patchState(store, { session });
           }
         });
       },
 
-      async signIn(email: string, password: string): Promise<ActionResult> {
-        const { data, error } = await client.auth.signInWithPassword({ email, password });
+      /**
+       * Sends the user to Google. Resolves only if the redirect itself fails — on success
+       * the tab has already navigated away, and the session is picked up on the way back
+       * by `detectSessionInUrl`, which `init()`'s `getSession()` awaits.
+       */
+      async signInWithGoogle(): Promise<ActionResult> {
+        const { error } = await client.auth.signInWithOAuth({
+          provider: 'google',
+          // Without `prompt`, signing out and back in silently reuses the same account.
+          options: { redirectTo, queryParams: { prompt: 'select_account' } },
+        });
+        return { error: error?.message ?? null };
+      },
+
+      /** Sets the username and role for a first-time user. Can only succeed once. */
+      async completeProfile(username: string, role: UserRole): Promise<ActionResult> {
+        const { error } = await client.rpc('complete_profile', {
+          p_username: username,
+          p_role: role,
+        });
         if (error) return { error: error.message };
-        patchState(store, { session: data.session });
         await loadProfile();
         return { error: null };
       },
 
-      async signUp(input: {
-        name: string;
-        email: string;
-        password: string;
-        role: UserRole;
-      }): Promise<ActionResult> {
-        const { data, error } = await client.auth.signUp({
-          email: input.email,
-          password: input.password,
-          options: { data: { name: input.name, role: input.role } },
-        });
+      /**
+       * Local development only: the seeded users keep a password so there is a way in
+       * without Google credentials. The login page hides this outside dev, and the hosted
+       * project has email sign-ups disabled and no password users.
+       */
+      async signIn(email: string, password: string): Promise<ActionResult> {
+        const { data, error } = await client.auth.signInWithPassword({ email, password });
         if (error) return { error: error.message };
-        if (!data.session) return { error: null, needsConfirmation: true };
         patchState(store, { session: data.session });
         await loadProfile();
         return { error: null };

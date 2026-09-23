@@ -1,6 +1,12 @@
 export type { Database } from './lib/database.types';
 export * from './lib/models';
-export { SUPABASE, provideSupabase, type CookLogClient, type SupabaseConfig } from './lib/supabase';
+export {
+  SUPABASE,
+  SUPABASE_REDIRECT_TO,
+  provideSupabase,
+  type CookLogClient,
+  type SupabaseConfig,
+} from './lib/supabase';
 export { AuthStore } from './lib/auth.store';
 export { EventsStore, type CreateEventInput } from './lib/events.store';
 export { CatalogStore } from './lib/catalog.store';

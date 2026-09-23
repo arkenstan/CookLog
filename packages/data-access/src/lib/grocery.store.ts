@@ -28,11 +28,15 @@ export const GroceryStore = signalStore(
       if (!opts.silent) patchState(store, { loading: true });
       const [rows, people] = await Promise.all([
         client.from('inventory').select('*').order('name'),
-        client.from('profiles').select('id, name'),
+        client.from('profiles').select('id, username'),
       ]);
       patchState(store, {
         items: rows.data ?? [],
-        names: Object.fromEntries((people.data ?? []).map((p) => [p.id, p.name])),
+        // Usernames are null until a user finishes setup; drop those so the display
+        // fallbacks ("Someone", "someone in the house") fire instead of an empty string.
+        names: Object.fromEntries(
+          (people.data ?? []).flatMap((p) => (p.username ? [[p.id, p.username] as const] : [])),
+        ),
         loading: false,
       });
     }

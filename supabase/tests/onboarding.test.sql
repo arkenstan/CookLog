@@ -7,15 +7,16 @@ $$ select set_config('request.jwt.claims', json_build_object('sub', $1, 'role', 
 insert into public.households (id, name, invite_code) values
   ('00000000-0000-0000-0000-0000000000a1', 'Existing', 'abc123'),
   ('00000000-0000-0000-0000-0000000000b1', 'Other', 'other1');
-insert into auth.users (id, email, raw_user_meta_data) values
-  ('aaaaaaaa-0000-0000-0000-0000000000a1', 'r1@t.dev', '{"role":"resident"}'),
-  ('aaaaaaaa-0000-0000-0000-0000000000c1', 'c1@t.dev', '{"role":"cook"}'),
-  ('aaaaaaaa-0000-0000-0000-0000000000f1', 'x@t.dev', '{"role":"admin"}');
-
-select is((select role::text from public.profiles where id = 'aaaaaaaa-0000-0000-0000-0000000000c1'),
-  'cook', 'sign-up metadata sets cook role');
-select is((select role::text from public.profiles where id = 'aaaaaaaa-0000-0000-0000-0000000000f1'),
-  'resident', 'unknown role falls back to resident');
+insert into auth.users (id, email) values
+  ('aaaaaaaa-0000-0000-0000-0000000000a1', 'r1@t.dev'),
+  ('aaaaaaaa-0000-0000-0000-0000000000c1', 'c1@t.dev');
+-- The trigger makes bare profiles; complete_profile's job, done directly here.
+-- (Its own behaviour is covered in profile.test.sql.)
+update public.profiles p set username = v.username, role = v.role::public.user_role
+from (values
+  ('aaaaaaaa-0000-0000-0000-0000000000a1'::uuid, 'res1', 'resident'),
+  ('aaaaaaaa-0000-0000-0000-0000000000c1'::uuid, 'cook1', 'cook')
+) as v (id, username, role) where p.id = v.id;
 
 set local role authenticated;
 select public._act_as('aaaaaaaa-0000-0000-0000-0000000000a1');
@@ -39,6 +40,8 @@ select throws_ok($$select public.set_active_household('00000000-0000-0000-0000-0
 
 select throws_ok($$update public.profiles set role = 'cook' where id = (select auth.uid())$$,
   '42501', null, 'cannot self-edit role');
+select throws_ok($$update public.profiles set username = 'nope' where id = (select auth.uid())$$,
+  '42501', null, 'cannot self-edit username (complete_profile only)');
 select throws_ok($$update public.profiles set active_household_id = null where id = (select auth.uid())$$,
   '42501', null, 'cannot self-edit active household directly');
 

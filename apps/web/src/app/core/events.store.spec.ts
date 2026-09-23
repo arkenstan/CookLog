@@ -20,7 +20,12 @@ async function setup(options: FakeOptions = {}) {
         { meal_id: 'm1', user_id: 'u2', item_id: 'roti', amount: 2, source: 'regular' },
         { meal_id: 'm1', user_id: 'u2', item_id: 'soup', amount: 1, source: 'manual' },
       ],
-      profiles: [{ id: 'u1', name: 'Asha' }, { id: 'u2', name: 'Ben' }],
+      profiles: [
+        { id: 'u1', username: 'Asha' },
+        { id: 'u2', username: 'Ben' },
+        // Signed in, but has not finished setup.
+        { id: 'u3', username: null },
+      ],
       ...options.tables,
     },
   });
@@ -109,6 +114,11 @@ describe('EventsStore', () => {
       expect(result.error).toBe('RSVPs are closed for this event');
       expect(store.myRsvps()['m1']).toBe('in');
     });
+  });
+
+  it('maps ids to usernames, skipping anyone who has not picked one', async () => {
+    const { store } = await setup();
+    expect(store.names()).toEqual({ u1: 'Asha', u2: 'Ben' });
   });
 
   it('createEvent returns the new id', async () => {

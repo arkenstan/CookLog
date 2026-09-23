@@ -24,7 +24,6 @@ export type StockStatus = Database['public']['Enums']['stock_status'];
 /** Result of a mutating store call: `error` is null on success. */
 export interface ActionResult {
   error: string | null;
-  needsConfirmation?: boolean;
   /** Set by calls that create a row (e.g. a new meal event). */
   id?: string;
 }

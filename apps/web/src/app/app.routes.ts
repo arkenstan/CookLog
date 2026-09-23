@@ -5,6 +5,8 @@ import {
   homeRedirectGuard,
   householdGuard,
   noHouseholdGuard,
+  noProfileGuard,
+  profileGuard,
   roleGuard,
 } from './core/guards';
 import { AppShell } from './layout/app-shell';
@@ -17,20 +19,25 @@ export const routes: Routes = [
     canActivate: [guestGuard],
     children: [
       { path: 'login', loadComponent: () => import('./features/auth/login').then((m) => m.Login) },
-      {
-        path: 'register',
-        loadComponent: () => import('./features/auth/register').then((m) => m.Register),
-      },
       { path: '', pathMatch: 'full', redirectTo: 'login' },
     ],
   },
   {
     path: 'onboarding',
     component: AuthLayout,
-    canActivate: [authGuard, noHouseholdGuard],
+    // noHouseholdGuard sits on the household child, not here: a user who has a household
+    // but no username yet would otherwise be bounced straight back off 'profile'.
+    canActivate: [authGuard],
     children: [
       {
+        path: 'profile',
+        canActivate: [noProfileGuard],
+        loadComponent: () =>
+          import('./features/onboarding/profile-setup').then((m) => m.ProfileSetup),
+      },
+      {
         path: '',
+        canActivate: [profileGuard, noHouseholdGuard],
         loadComponent: () => import('./features/onboarding/onboarding').then((m) => m.Onboarding),
       },
     ],
@@ -41,7 +48,7 @@ export const routes: Routes = [
   {
     path: '',
     component: AppShell,
-    canActivate: [authGuard, householdGuard],
+    canActivate: [authGuard, profileGuard, householdGuard],
     children: [
       {
         path: 'home',

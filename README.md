@@ -23,15 +23,34 @@ Requirements: Node 24, Corepack, pnpm 12, and Docker for local Supabase.
 ```bash
 corepack enable
 pnpm install
+cp .env.example .env    # fill in the Google OAuth values, see below
 pnpm db:start
 pnpm --filter web dev
 ```
 
-The web app is available at `http://127.0.0.1:4200`.
+The web app is available at `http://localhost:4200`, which is what `site_url` in
+`supabase/config.toml` points at. `127.0.0.1:4200` is allow-listed too, but the two
+are separate `localStorage` origins, so a session created on one is invisible on the
+other — pick one and stay on it.
 
 Local development uses the Supabase CLI stack at `http://127.0.0.1:54321`.
 Production environment values are still placeholders in
 `apps/web/src/environments/environment.production.ts`.
+
+### Google sign-in
+
+`supabase/config.toml` enables the Google provider, so `pnpm db:start` needs
+`SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`
+in the environment or in a `.env` file. Create an OAuth 2.0 Client ID of type "Web
+application" in the Google Cloud Console with authorised redirect URI
+`http://127.0.0.1:54321/auth/v1/callback` (GoTrue's address, not Angular's) and
+authorised JavaScript origin `http://localhost:4200`.
+
+To skip that setup, the login page also shows a **local dev sign-in** form outside
+production. The seeded users (`asha@example.com`, `ben@example.com`,
+`cook@example.com`, password `password123`) already have usernames and a household.
+Signing in with a real Google account instead lands you on the username step, then
+you can join the seeded household with invite code `flat3b`.
 
 ## Common commands
 
@@ -52,17 +71,23 @@ is the focused check for the Angular application.
 
 ## Product surface
 
-The current app includes email auth, onboarding, multiple households, meal
-events, availability, count and portion items, regulars, a shared grocery list,
-and the cook docket.
+The current app includes Google sign-in, username and role setup, household
+onboarding, multiple households, meal events, availability, count and portion
+items, regulars, a shared grocery list, and the cook docket.
 Routes include:
 
-`/auth/login`, `/auth/register`, `/onboarding`, `/households/add`, `/home`,
+`/auth/login`, `/onboarding/profile`, `/onboarding`, `/households/add`, `/home`,
 `/events/new`, `/events/:id`, `/grocery`, `/regulars`, and `/kitchen`.
+
+A user is a username and a role, nothing more: `public.profiles` holds no name,
+email or avatar. Supabase's own `auth` schema still stores the Google email,
+because that is how GoTrue identifies an account.
 
 Features not yet implemented include event editing/cancellation, cooked-status
 automation, allergies editing, push notifications, mobile Tauri targets, and
-production Supabase configuration.
+production Supabase configuration. **The Tauri desktop/mobile shell currently has
+no way to sign in** — Google rejects OAuth inside embedded WebViews, so it needs a
+system-browser flow and a deep-link plugin first.
 
 ## CI and deployment
 
@@ -73,6 +98,17 @@ shared packages deploy the web build to Cloudflare Pages. Changes under
 These workflows require repository secrets and a configured production
 Supabase project; they do not make the placeholder production environment safe
 to deploy by themselves.
+
+`supabase db push` applies migrations only — **nothing in the `[auth]` section of
+`config.toml` reaches production.** Set these by hand in the Supabase dashboard:
+
+1. **Authentication → Providers → Google**: enable it, with a second OAuth client
+   whose redirect URI is `https://<project-ref>.supabase.co/auth/v1/callback`.
+2. **Authentication → Providers → Email**: turn off new sign-ups, and delete any
+   password users the project already has.
+3. **Authentication → URL Configuration**: set Site URL to the Cloudflare Pages
+   origin and add it (plus `/**`) to the redirect allow-list.
+4. Fill in `apps/web/src/environments/environment.production.ts`.
 
 ## Repository layout
 

@@ -4,6 +4,75 @@ How data moves through the code touched by each session. Newest session first.
 
 ---
 
+## 2026-09-23 — Google SSO, username identity, minimal stored data
+
+### Signing in
+
+There is no `/auth/callback` route, and none is needed. supabase-js v2 defaults to
+`detectSessionInUrl: true` with PKCE, and `AuthStore.init()`'s first call — `getSession()` —
+awaits GoTrue's internal initialise promise, which is what exchanges the `?code=` and
+`history.replaceState`s the URL clean. Because `provideAppInitializer(() => inject(AuthStore).init())`
+runs before the router's first navigation, the guards already see a real session.
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant L as login.ts
+  participant S as supabase-js
+  participant G as Google
+  participant T as GoTrue
+  participant A as AuthStore.init (app initializer)
+  U->>L: Continue with Google
+  L->>S: signInWithOAuth({ provider: 'google', redirectTo: origin + '/' })
+  S->>G: redirect (tab leaves; the promise never resolves)
+  G->>T: /auth/v1/callback
+  T-->>U: redirect to /?code=…
+  A->>S: getSession()
+  S->>T: exchange code (PKCE), clean the URL
+  T-->>S: session
+  A->>S: select * from profiles where id = uid
+  Note over A: username NULL ⇒ setup not finished
+  A-->>U: router's first navigation → homeRedirectGuard
+```
+
+### The three-stage gate
+
+`homeRedirectGuard` and the AppShell route's guard list run the same order. `noHouseholdGuard`
+sits on the `/onboarding` **child**, not the parent — on the parent, stage 2 and stage 3 fight
+each other into a redirect loop (decisions.md, D19).
+
+```mermaid
+flowchart TD
+  R[/ or any shell route/] --> A{isAuthenticated}
+  A -->|no| L[/auth/login]
+  A -->|yes| P{hasProfile — username set}
+  P -->|no| PS[/onboarding/profile]
+  P -->|yes| H{hasHousehold}
+  H -->|no| O[/onboarding]
+  H -->|yes| Rl{role}
+  Rl -->|cook| K[/kitchen]
+  Rl -->|resident| Hm[/home]
+```
+
+### What is stored
+
+`handle_new_user()` now inserts the id alone — it never reads `raw_user_meta_data`, so no
+name, email or avatar from Google reaches the `public` schema. `complete_profile(username, role)`
+is the only writer of either column, and it succeeds once: the column grant was explicitly
+revoked, because a column ACL follows a renamed column and survives a table-level revoke.
+
+| Store | Reads | Writes |
+| --- | --- | --- |
+| `auth.store.ts` | `profiles`, `households` | `complete_profile`, `create_household`, `join_household`, `set_active_household` RPCs; `signInWithOAuth` |
+| `events.store.ts` | `meals`, `rsvps`, `event_entries`, `profiles(id,username)` | unchanged |
+| `grocery.store.ts` | `inventory`, `profiles(id,username)` | unchanged |
+
+Both `names` maps now **drop** ids whose username is NULL rather than mapping them to `''`, so
+a housemate who has not finished setup falls through to the existing display fallbacks —
+`'Someone'` on the event roster, `'Added by someone in the house'` on the grocery ledger.
+
+---
+
 ## 2026-09-22 — Resident a11y + shell restructure, grocery list, cook dashboard design
 
 **Status.** The resident pass is built. Everything below describes code in the repo unless

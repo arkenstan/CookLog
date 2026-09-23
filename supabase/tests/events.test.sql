@@ -8,11 +8,19 @@ $$ select set_config('request.jwt.claims', json_build_object('sub', $1, 'role', 
 insert into public.households (id, name) values
   ('00000000-0000-0000-0000-0000000000a1', 'H'),
   ('00000000-0000-0000-0000-0000000000b1', 'O');
-insert into auth.users (id, email, raw_user_meta_data) values
-  ('aaaaaaaa-0000-0000-0000-0000000000a1', 'r1@t.dev', '{"role":"resident"}'),
-  ('aaaaaaaa-0000-0000-0000-0000000000a2', 'r2@t.dev', '{"role":"resident"}'),
-  ('aaaaaaaa-0000-0000-0000-0000000000c1', 'c1@t.dev', '{"role":"cook"}'),
-  ('bbbbbbbb-0000-0000-0000-0000000000b1', 'ro@t.dev', '{"role":"resident"}');
+insert into auth.users (id, email) values
+  ('aaaaaaaa-0000-0000-0000-0000000000a1', 'r1@t.dev'),
+  ('aaaaaaaa-0000-0000-0000-0000000000a2', 'r2@t.dev'),
+  ('aaaaaaaa-0000-0000-0000-0000000000c1', 'c1@t.dev'),
+  ('bbbbbbbb-0000-0000-0000-0000000000b1', 'ro@t.dev');
+-- The trigger makes bare profiles; complete_profile's job, done directly here.
+update public.profiles p set username = v.username, role = v.role::public.user_role
+from (values
+  ('aaaaaaaa-0000-0000-0000-0000000000a1'::uuid, 'res1', 'resident'),
+  ('aaaaaaaa-0000-0000-0000-0000000000a2'::uuid, 'res2', 'resident'),
+  ('aaaaaaaa-0000-0000-0000-0000000000c1'::uuid, 'cook1', 'cook'),
+  ('bbbbbbbb-0000-0000-0000-0000000000b1'::uuid, 'other1', 'resident')
+) as v (id, username, role) where p.id = v.id;
 insert into public.household_members (household_id, user_id) values
   ('00000000-0000-0000-0000-0000000000a1', 'aaaaaaaa-0000-0000-0000-0000000000a1'),
   ('00000000-0000-0000-0000-0000000000a1', 'aaaaaaaa-0000-0000-0000-0000000000a2'),

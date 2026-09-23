@@ -4,7 +4,7 @@ Source of truth: [`supabase/migrations/`](../../supabase/migrations). Tests: [`s
 
 ## Model
 ```
-households 1─* household_members *─1 profiles (role resident|cook; active_household_id)
+households 1─* household_members *─1 profiles (username unique on lower(); role resident|cook; active_household_id)
 households 1─* items (kind count|portion)
 profiles   1─* regulars *─1 items                 (my default amounts)
 households 1─* meals  (a "meal event": title, type, starts_at, cutoff_at, status)
@@ -12,6 +12,7 @@ meals      1─* rsvps (meal_id, user_id, in|out)
 meals      1─* event_entries (meal_id, user_id, item_id, amount, source regular|manual)
 meals      1─* cook_events        households 1─* inventory
 ```
+- **Identity is a username, and nothing else.** Google SSO is the only sign-up path, and `public.profiles` deliberately stores no name, email or avatar — `handle_new_user()` inserts the id alone and never reads `raw_user_meta_data`. `username` is NULL until the user completes setup, which is the *only* signal for "not set up yet" (`role` keeps its `NOT NULL DEFAULT 'resident'`, so `current_user_role()` stays two-valued for every policy that depends on it). Format: 3–20 of `[A-Za-z0-9_]`, enforced by a CHECK, stored as typed, unique on `lower(username)` so `Asha` and `asha` cannot coexist. Supabase's own `auth` schema still holds the Google email; it is GoTrue's identity key and is left alone on purpose.
 - **Multi-household.** A user can belong to many households (`household_members`). `profiles.active_household_id` is the one the UI shows. `current_household()` returns it (validated against membership), and nearly every policy is "row belongs to my active household". Switching = `set_active_household(id)`; no client can write the column directly. Role is account-level (`profiles.role`).
 - **Items.** `count` = whole units (roti, bread; +1 per step). `portion` = servings in 0.5 steps (soup, dal, rice). A trigger (`validate_amount`) enforces this on `regulars` and `event_entries`; amounts are `numeric(6,1)`, > 0 and ≤ 100.
 - **Regulars** are per resident and apply to items of the household they are in. They are copied into an event as `source = 'regular'` entries when the resident is In (never overwriting an existing entry, so per-event tweaks survive Out → In).
@@ -21,7 +22,7 @@ meals      1─* cook_events        households 1─* inventory
 | --- | --- | --- |
 | `households` | select those I belong to | same |
 | `household_members` | select my rows + members of households I'm in; no writes | same |
-| `profiles` | select self + housemates; update `name`, `device_token` only | same |
+| `profiles` | select self + housemates; update `device_token` only — `username` and `role` are set once, by `complete_profile` | same |
 | `preferences` | select self + housemates; insert/update self | select housemates (allergies for docket) |
 | `items` | select active household; insert (as self) | select |
 | `regulars` | select/insert/update(`amount`)/delete **own** rows | — |
@@ -31,13 +32,14 @@ meals      1─* cook_events        households 1─* inventory
 | `inventory` | select; insert (as self); update(`status`, `note`); delete — all active-household | same as resident (shared pantry: the cook marks items missing) |
 | `cook_events` | select | select, insert |
 
-Column-level grants back this up (e.g. `update (amount)` only), so a policy mistake cannot widen writable columns.
+Column-level grants back this up (e.g. `update (amount)` only), so a policy mistake cannot widen writable columns. Note that column ACLs follow a renamed column and survive a table-level `revoke update`, so `20260923000000` revokes `update (username, device_token)` explicitly before re-granting `device_token`; `profile.test.sql` asserts a direct `username` write fails with `42501`.
 
 ## RPCs (`security definer`, `search_path = ''`, `authenticated` only)
 | RPC | Effect |
 | --- | --- |
-| `create_household(name)` | Residents only. Creates household, membership, sets active, seeds catalog (Roti, Bread = count; Rice, Dal, Soup = portion) and the pantry (Oil, Atta, Salt, Milk, authored by the creator) |
-| `join_household(code)` | Adds membership by (case-insensitive) invite code and makes it active |
+| `complete_profile(username, role)` | First-time setup. Trims and validates the username, refuses if one is already set, maps a collision to `That username is taken`. The only way `username` or `role` is ever written |
+| `create_household(name)` | Residents only, and only with a completed profile. Creates household, membership, sets active, seeds catalog (Roti, Bread = count; Rice, Dal, Soup = portion) and the pantry (Oil, Atta, Salt, Milk, authored by the creator) |
+| `join_household(code)` | Adds membership by (case-insensitive) invite code and makes it active. Requires a completed profile |
 | `set_active_household(id)` | Must be a member |
 | `create_meal_event(title, type, starts_at, cutoff_at)` | Residents only, `cutoff_at <= starts_at`. Creates the event; every resident member gets an `in` RSVP and their regulars |
 | `set_availability(meal, status)` | Residents only; event must be pending and before cutoff. Upserts own RSVP; `in` re-applies regulars |
@@ -62,4 +64,10 @@ The daily auto-created lunch/dinner, the rotating menu picker and menu bank (`me
 - Nothing marks events `locked` / `cooked` yet; locking relies on `cutoff_at`, and "completed" is otherwise date-based.
 - Event phases use the browser's timezone; `households.timezone` is unused for meals.
 - No way to edit/cancel an event, remove a member, or leave a household yet.
-- Email confirmation is off locally; decide for production (the register page already handles the confirm-email response).
+- A username is set once and there is no rename path.
+- The client cannot check whether a username is free before submitting: `profiles_select` only
+  exposes self and housemates, so taken-ness comes back as an error from `complete_profile`.
+- Google's provider settings live in the dashboard, not in `config.toml` — `supabase db push`
+  does not carry them (see the README).
+- The Tauri desktop/mobile shell has no way to sign in: Google refuses OAuth in embedded
+  WebViews, so it needs a system-browser flow and a deep-link plugin (roadmap M7).

@@ -8,11 +8,15 @@ import {
   homeRedirectGuard,
   householdGuard,
   noHouseholdGuard,
+  noProfileGuard,
+  profileGuard,
   roleGuard,
 } from './guards';
 
 interface State {
   signedIn: boolean;
+  /** Has picked a username, i.e. finished profile setup. */
+  profile: boolean;
   household: boolean;
   role: UserRole | null;
 }
@@ -27,6 +31,7 @@ function run(guard: CanActivateFn, s: State): true | string {
         provide: AuthStore,
         useValue: {
           isAuthenticated: signal(s.signedIn),
+          hasProfile: signal(s.profile),
           hasHousehold: signal(s.household),
           role: signal(s.role),
         },
@@ -38,10 +43,12 @@ function run(guard: CanActivateFn, s: State): true | string {
   return TestBed.inject(Router).serializeUrl(result as UrlTree);
 }
 
-const out: State = { signedIn: false, household: false, role: null };
-const noHome: State = { signedIn: true, household: false, role: 'resident' };
-const resident: State = { signedIn: true, household: true, role: 'resident' };
-const cook: State = { signedIn: true, household: true, role: 'cook' };
+const out: State = { signedIn: false, profile: false, household: false, role: null };
+/** Signed in via Google, but has not picked a username yet. */
+const noName: State = { signedIn: true, profile: false, household: false, role: 'resident' };
+const noHome: State = { signedIn: true, profile: true, household: false, role: 'resident' };
+const resident: State = { signedIn: true, profile: true, household: true, role: 'resident' };
+const cook: State = { signedIn: true, profile: true, household: true, role: 'cook' };
 
 describe('route guards', () => {
 
@@ -53,6 +60,13 @@ describe('route guards', () => {
   it('guestGuard bounces signed-in users to /', () => {
     expect(run(guestGuard, out)).toBe(true);
     expect(run(guestGuard, resident)).toBe('/');
+  });
+
+  it('profileGuard / noProfileGuard gate on having a username', () => {
+    expect(run(profileGuard, noName)).toBe('/onboarding/profile');
+    expect(run(profileGuard, noHome)).toBe(true);
+    expect(run(noProfileGuard, noName)).toBe(true);
+    expect(run(noProfileGuard, noHome)).toBe('/');
   });
 
   it('householdGuard / noHouseholdGuard gate on membership', () => {
@@ -69,8 +83,9 @@ describe('route guards', () => {
     expect(run(roleGuard('cook'), cook)).toBe(true);
   });
 
-  it('homeRedirectGuard routes by auth, household and role', () => {
+  it('homeRedirectGuard routes by auth, profile, household and role', () => {
     expect(run(homeRedirectGuard, out)).toBe('/auth/login');
+    expect(run(homeRedirectGuard, noName)).toBe('/onboarding/profile');
     expect(run(homeRedirectGuard, noHome)).toBe('/onboarding');
     expect(run(homeRedirectGuard, resident)).toBe('/home');
     expect(run(homeRedirectGuard, cook)).toBe('/kitchen');

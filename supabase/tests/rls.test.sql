@@ -4,14 +4,21 @@ select no_plan();
 create function public._act_as(uid uuid) returns text language sql as
 $$ select set_config('request.jwt.claims', json_build_object('sub', $1, 'role', 'authenticated')::text, true) $$;
 
--- Fixtures (postgres bypasses RLS). Profiles come from the auth.users trigger.
+-- Fixtures (postgres bypasses RLS). The trigger creates bare profiles; identity is set below.
 insert into public.households (id, name) values
   ('00000000-0000-0000-0000-00000000000a', 'A'),
   ('00000000-0000-0000-0000-00000000000b', 'B');
-insert into auth.users (id, email, raw_user_meta_data) values
-  ('aaaaaaaa-0000-0000-0000-00000000000a', 'a-res@test.dev', '{"role":"resident"}'),
-  ('aaaaaaaa-0000-0000-0000-00000000000c', 'a-cook@test.dev', '{"role":"cook"}'),
-  ('bbbbbbbb-0000-0000-0000-00000000000b', 'b-res@test.dev', '{"role":"resident"}');
+insert into auth.users (id, email) values
+  ('aaaaaaaa-0000-0000-0000-00000000000a', 'a-res@test.dev'),
+  ('aaaaaaaa-0000-0000-0000-00000000000c', 'a-cook@test.dev'),
+  ('bbbbbbbb-0000-0000-0000-00000000000b', 'b-res@test.dev');
+-- The trigger makes bare profiles; complete_profile's job, done directly here.
+update public.profiles p set username = v.username, role = v.role::public.user_role
+from (values
+  ('aaaaaaaa-0000-0000-0000-00000000000a'::uuid, 'a_res', 'resident'),
+  ('aaaaaaaa-0000-0000-0000-00000000000c'::uuid, 'a_cook', 'cook'),
+  ('bbbbbbbb-0000-0000-0000-00000000000b'::uuid, 'b_res', 'resident')
+) as v (id, username, role) where p.id = v.id;
 insert into public.household_members (household_id, user_id) values
   ('00000000-0000-0000-0000-00000000000a', 'aaaaaaaa-0000-0000-0000-00000000000a'),
   ('00000000-0000-0000-0000-00000000000a', 'aaaaaaaa-0000-0000-0000-00000000000c'),

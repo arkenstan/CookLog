@@ -81,5 +81,11 @@ export function fakeGrocery(over: Record<string, unknown> = {}) {
 
 export const fakeAuth = () => ({
   provide: AuthStore,
-  useValue: { userId: signal('u1'), activeHouseholdId: signal('h1') },
+  useValue: {
+    userId: signal('u1'),
+    activeHouseholdId: signal('h1'),
+    username: signal('Asha'),
+    hasProfile: signal(true),
+    role: signal('resident'),
+  },
 });

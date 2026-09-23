@@ -1,5 +1,6 @@
+import { Route } from '@angular/router';
 import { routes } from './app.routes';
-import { homeRedirectGuard } from './core/guards';
+import { homeRedirectGuard, noHouseholdGuard, noProfileGuard } from './core/guards';
 
 /**
  * Regression cover for a blank page after sign-in: `homeRedirectGuard` was correct but
@@ -26,5 +27,30 @@ describe('app routes', () => {
 
   it('sends unknown paths back through the same redirect', () => {
     expect(routes.find((r) => r.path === '**')?.redirectTo).toBe('');
+  });
+
+  describe('sign-in and setup', () => {
+    const auth = routes.find((r) => r.path === 'auth') as Route;
+    const onboarding = routes.find((r) => r.path === 'onboarding') as Route;
+    const child = (parent: Route, path: string) =>
+      parent.children?.find((c) => c.path === path) as Route;
+
+    it('has no register route: Google SSO is the only way in', () => {
+      expect(child(auth, 'register')).toBeUndefined();
+      expect(child(auth, 'login')).toBeDefined();
+    });
+
+    /**
+     * Regression cover for a redirect loop: with noHouseholdGuard on the parent, a user who
+     * has a household but no username bounces off 'profile' straight back to '' and around.
+     */
+    it('gates the household step, not the whole onboarding tree, on having no household', () => {
+      expect(onboarding.canActivate).not.toContain(noHouseholdGuard);
+      expect(child(onboarding, '').canActivate).toContain(noHouseholdGuard);
+    });
+
+    it('puts username setup behind noProfileGuard', () => {
+      expect(child(onboarding, 'profile').canActivate).toContain(noProfileGuard);
+    });
   });
 });

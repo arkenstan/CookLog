@@ -155,11 +155,11 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "http://127.0.0.1:3000"
+site_url = "http://localhost:4200"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+additional_redirect_urls = ["http://localhost:4200", "http://localhost:4200/**", "http://127.0.0.1:4200", "http://127.0.0.1:4200/**"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -217,6 +217,14 @@ web3 = 30
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
+# Deliberately left ON, and only in this file, which configures the LOCAL stack -- the deploy
+# workflow runs `db push` and never `config push`, so nothing here reaches production.
+# Two traps if you are tempted to turn it off:
+#   * the CLI maps this to GOTRUE_EXTERNAL_EMAIL_ENABLED, which disables the whole email
+#     provider, sign-IN included -- that kills the seeded users the dev-only login form needs;
+#   * [auth] enable_signup is worse still: it is GOTRUE_DISABLE_SIGNUP and rejects OAuth
+#     users too, so no account could ever be created again.
+# Production is Google-only, configured by hand in the dashboard (see the README).
 enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
@@ -318,6 +326,16 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `x`, `slack`, `spotify`, `workos`, `zoom`.
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+# DO NOT commit your OAuth provider secret to git. See .env.example.
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+redirect_uri = ""
+url = ""
+# Required for local sign in with Google auth.
+skip_nonce_check = true
+
 [auth.external.apple]
 enabled = false
 client_id = ""

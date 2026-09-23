@@ -7,10 +7,21 @@ export const authGuard: CanActivateFn = () => {
   return auth.isAuthenticated() || inject(Router).createUrlTree(['/auth/login']);
 };
 
-/** Login/register are for signed-out users only. */
+/** The login page is for signed-out users only. */
 export const guestGuard: CanActivateFn = () => {
   const auth = inject(AuthStore);
   return !auth.isAuthenticated() || inject(Router).createUrlTree(['/']);
+};
+
+/** Google gives us no username, so a first-time user picks one before anything else. */
+export const profileGuard: CanActivateFn = () => {
+  const auth = inject(AuthStore);
+  return auth.hasProfile() || inject(Router).createUrlTree(['/onboarding/profile']);
+};
+
+export const noProfileGuard: CanActivateFn = () => {
+  const auth = inject(AuthStore);
+  return !auth.hasProfile() || inject(Router).createUrlTree(['/']);
 };
 
 export const householdGuard: CanActivateFn = () => {
@@ -35,6 +46,7 @@ export const homeRedirectGuard: CanActivateFn = () => {
   const auth = inject(AuthStore);
   const router = inject(Router);
   if (!auth.isAuthenticated()) return router.createUrlTree(['/auth/login']);
+  if (!auth.hasProfile()) return router.createUrlTree(['/onboarding/profile']);
   if (!auth.hasHousehold()) return router.createUrlTree(['/onboarding']);
   return router.createUrlTree([auth.role() === 'cook' ? '/kitchen' : '/home']);
 };

@@ -4,6 +4,131 @@ Engineering decision log. Newest session first.
 
 ---
 
+## 2026-09-23 — Google SSO only, username identity, minimal stored data
+
+**Scope.** Remove email/password registration in favour of Google SSO, add a first-login step
+that collects a username and a role, and stop storing personal information in the `public`
+schema.
+
+**Status.** Built and verified: 82 pgTAP assertions and 108 Vitest tests pass, `pnpm gen:types`
+is idempotent against the live schema, and the web bundle builds. All decisions below are
+`accepted`.
+
+### D16 — Google SSO is the only way to create an account
+
+- **Decision:** Delete the register page and `signUp`. `/auth/login` is a single "Continue
+  with Google" button. New accounts come from Google and nowhere else.
+- **Status:** `accepted` — **user requirement**, not an implementation choice.
+- **Consequences:** `[auth.email] enable_signup = false` — see D20. The desktop/mobile shell
+  loses its only sign-in path — see D22.
+- **Affects:** `apps/web/src/app/features/auth/`, `packages/data-access/src/lib/auth.store.ts`,
+  `supabase/config.toml`.
+
+### D17 — `profiles.name` becomes a unique `username`, stored as typed
+
+- **Decision:** Rename the column. 3–20 characters of `[A-Za-z0-9_]`, enforced by a CHECK,
+  a re-check in `complete_profile`, and an Angular `Validators.pattern`. Stored exactly as
+  typed, with a unique index on `lower(username)`.
+- **Status:** `accepted` — **user requirement** (one identity field, no display name); the
+  format and casing are implementation choices.
+- **Reason:** The username is also what the UI renders — the In/Out roster and the grocery
+  ledger's "Added by". Lowercasing it would print "added by asha" everywhere. A
+  case-insensitive unique index still stops `Asha` and `asha` from coexisting.
+- **Alternatives considered:** keeping `name` as an optional display name beside a username.
+  Rejected by the user: it keeps a second, Google-derivable field for no product gain.
+- **Consequences:** No rename path exists. The client cannot check availability before
+  submitting — `profiles_select` only exposes self and housemates — so taken-ness comes back
+  as an error from the RPC. The migration must null out legacy values that contain spaces or
+  collide, or the CHECK and the index abort it.
+- **Affects:** `20260923000000_google_sso_profiles.sql`, `events.store.ts`, `grocery.store.ts`.
+
+### D18 — `role` stays `NOT NULL DEFAULT 'resident'`; `username IS NULL` is the only setup signal
+
+- **Decision:** Do not make `role` nullable. A profile needs setup exactly when its username
+  is NULL.
+- **Status:** `accepted` — implementation choice.
+- **Reason:** `current_user_role()` feeds seven RLS policies and five RPC guards across three
+  migrations. Making it nullable turns every `is distinct from 'resident'` into a different
+  question and needs all of it re-proven, for no product benefit. Two independent "incomplete"
+  signals can also disagree with each other; one cannot.
+- **Consequences:** A signed-in user with no username is nominally a resident at the database
+  level, so the route guard is not enough. `create_household` and `join_household` now raise
+  `complete your profile first`, which makes "identity before household" a server-side
+  invariant rather than a UI convention.
+- **Affects:** `20260923000000_google_sso_profiles.sql`, `supabase/tests/profile.test.sql`.
+
+### D19 — Profile setup is its own route and component
+
+- **Decision:** A new `ProfileSetup` component at `/onboarding/profile`, not a third mode
+  inside `Onboarding`.
+- **Status:** `accepted` — implementation choice.
+- **Reason:** `Onboarding` is already dual-purpose (first run vs. `embedded` at
+  `/households/add`). A separate route is also what makes `profileGuard` / `noProfileGuard`
+  expressible at all.
+- **Constraint discovered:** `noHouseholdGuard` was on the **parent** `onboarding` route. Left
+  there, a user with a household but no username loops forever: `/onboarding/profile` →
+  parent guard fires → `/` → `homeRedirectGuard` → `/onboarding/profile`. It now sits on the
+  `''` child, and `app.routes.spec.ts` asserts that.
+- **Consequences:** The gate order is `isAuthenticated` → `hasProfile` → `hasHousehold` →
+  role, in `homeRedirectGuard` and in the AppShell route's guard list alike.
+- **Affects:** `apps/web/src/app/app.routes.ts`, `core/guards.ts`,
+  `features/onboarding/profile-setup.ts`.
+
+### D20 — Email auth is switched off in the production dashboard, not in `config.toml`
+
+- **Decision:** Leave both `enable_signup` flags in `supabase/config.toml` alone. Google-only
+  is enforced in production by hand, in the Supabase dashboard.
+- **Status:** `accepted` — implementation choice, corrected by verification.
+- **Reason:** `config.toml` configures the **local** stack only: `supabase-deploy.yml` runs
+  `link`, `db push` and `functions deploy`, never `config push`, so nothing in `[auth]` ever
+  reaches the hosted project. Turning email off there therefore buys production nothing and
+  costs local development the D21 escape hatch. Both flags were tried and both are traps:
+  - `[auth.email] enable_signup = false` maps to `GOTRUE_EXTERNAL_EMAIL_ENABLED=false`, which
+    disables the whole email provider. Sign-**in** dies with it, and the password grant then
+    returns `email_provider_disabled` — found by signing a seeded user in over HTTP.
+  - `[auth] enable_signup = false` is `GOTRUE_DISABLE_SIGNUP`, which rejects **every** new
+    user including OAuth ones. With the password path gone, no account could ever be created
+    again.
+- **Consequences:** A local stack still accepts email sign-ups. That is intentional and
+  contained: the app has no UI for it beyond the dev-only form, and production is configured
+  separately. The README lists the four manual dashboard steps, and `config.toml` carries a
+  comment so nobody "fixes" this later.
+- **Affects:** `supabase/config.toml`, `README.md`.
+
+### D21 — A dev-only password sign-in survives, behind `!environment.production`
+
+- **Decision:** Keep `AuthStore.signIn` and the seeded password users; the login page renders
+  the email/password form only outside production.
+- **Status:** `accepted` — **user decision**, chosen over requiring Google credentials locally.
+- **Reason:** With Google as the only path, no one can sign in to a local stack without first
+  registering an OAuth client in the Google Cloud Console. That is a poor first-run experience
+  for a change that is otherwise invisible locally.
+- **Alternatives considered:** deleting the password path entirely and documenting the Google
+  setup as a prerequisite. Rejected by the user.
+- **Consequences:** A second auth path exists in the codebase. The `@if` branch is still
+  compiled into the production bundle — Angular cannot tree-shake a template branch — it
+  simply never renders. So the containment that matters is **server-side**: the hosted
+  project has the email provider disabled and holds no password users, which makes
+  `signInWithPassword` fail even if the form were forced to appear. `seed.sql` documents the
+  local credentials.
+- **Affects:** `apps/web/src/app/features/auth/login.ts`, `supabase/seed.sql`.
+
+### D22 — Tauri OAuth is out of scope
+
+- **Decision:** Leave `tauri.conf.json` untouched. The desktop/mobile shell has no sign-in.
+- **Status:** `accepted` — **user decision** after the regression was raised.
+- **Reason:** Google rejects OAuth inside embedded WebViews (`disallowed_useragent`), and
+  there is no deep-link plugin or custom scheme registered, so there is nothing for the
+  callback to return into. The correct shape — system browser → deep link →
+  `exchangeCodeForSession` — is a plugin, Rust and signing-config change, i.e. roadmap M7.
+- **Consequences:** A real regression from "the email form worked in the WebView". Recorded in
+  the README, `03-database-rls.md` known gaps, and roadmap M7 rather than left to be
+  discovered. The CSP needs no change: `connect-src` already allows `*.supabase.co`, and
+  `accounts.google.com` must **not** be added, because the WebView should never go there.
+- **Affects:** documentation only.
+
+---
+
 ## 2026-09-22 — Resident a11y + shell restructure, grocery list, cook dashboard design
 
 **Scope.** Restructure the resident shell (more-menu, mobile bottom nav, FAB), fix the

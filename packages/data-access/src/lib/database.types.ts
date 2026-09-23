@@ -360,24 +360,24 @@ export type Database = {
           created_at: string
           device_token: string | null
           id: string
-          name: string
           role: Database["public"]["Enums"]["user_role"]
+          username: string | null
         }
         Insert: {
           active_household_id?: string | null
           created_at?: string
           device_token?: string | null
           id: string
-          name?: string
           role?: Database["public"]["Enums"]["user_role"]
+          username?: string | null
         }
         Update: {
           active_household_id?: string | null
           created_at?: string
           device_token?: string | null
           id?: string
-          name?: string
           role?: Database["public"]["Enums"]["user_role"]
+          username?: string | null
         }
         Relationships: [
           {
@@ -531,6 +531,13 @@ export type Database = {
     Functions: {
       apply_regulars: {
         Args: { p_meal: string; p_user: string }
+        Returns: undefined
+      }
+      complete_profile: {
+        Args: {
+          p_role: Database["public"]["Enums"]["user_role"]
+          p_username: string
+        }
         Returns: undefined
       }
       create_household: {
